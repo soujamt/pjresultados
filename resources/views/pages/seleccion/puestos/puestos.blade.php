@@ -6,54 +6,57 @@
         <x-slot:acciones>
             @if ($proceso)
                 @can(App\Enums\Permiso::PuestosImportar->value)
-                    <flux:button wire:click="abrirImportacion" icon="arrow-up-tray">Importar desde Excel</flux:button>
+                    <flux:button wire:click="abrirImportacion" icon="upload-04">Importar desde Excel</flux:button>
                 @endcan
 
                 @can(App\Enums\Permiso::PuestosCrear->value)
-                    <flux:button wire:click="nuevo" variant="primary" icon="plus">Nuevo puesto</flux:button>
+                    <flux:button wire:click="nuevo" variant="primary" icon="plus-sign">Nuevo puesto</flux:button>
                 @endcan
             @endif
         </x-slot:acciones>
     </x-pagina.encabezado>
 
-    <div class="flex flex-wrap items-end gap-3">
-        <div class="w-full sm:w-64">
-            <flux:select wire:model.live="codigoProceso" label="Proceso">
-                @foreach ($procesos as $opcion)
-                    <flux:select.option :value="$opcion->codigo_pro">{{ $opcion->codigo_pro }}</flux:select.option>
-                @endforeach
-            </flux:select>
-        </div>
+    <x-panel>
+        <div class="flex flex-wrap items-end gap-3">
+            <div class="w-full sm:w-60">
+                <flux:select wire:model.live="codigoProceso" label="Proceso">
+                    @foreach ($procesos as $opcion)
+                        <flux:select.option :value="$opcion->codigo_pro">{{ $opcion->codigo_pro }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+            </div>
 
-        <div class="w-full sm:w-96">
-            <flux:select wire:model.live="filtroUnidad" label="Unidad de organización">
-                <flux:select.option value="">Todas las unidades</flux:select.option>
-                @foreach ($unidades as $unidad)
-                    <flux:select.option :value="$unidad->id_uni">{{ $unidad->nombre_uni }}</flux:select.option>
-                @endforeach
-            </flux:select>
-        </div>
+            <div class="w-full sm:w-96">
+                <flux:select wire:model.live="filtroUnidad" label="Unidad de organización">
+                    <flux:select.option value="">Todas las unidades</flux:select.option>
+                    @foreach ($unidades as $unidad)
+                        <flux:select.option :value="$unidad->id_uni">{{ $unidad->nombre_uni }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+            </div>
 
-        <div class="w-full sm:w-64">
-            <flux:input wire:model.live.debounce.300ms="busqueda" icon="magnifying-glass" placeholder="Buscar por código o puesto" clearable />
-        </div>
+            <div class="w-full sm:w-64">
+                <flux:input wire:model.live.debounce.300ms="busqueda" icon="search-01" placeholder="Buscar por código o puesto" clearable />
+            </div>
 
-        @if ($filtroUnidad !== '' || $busqueda !== '')
-            <flux:button wire:click="limpiarFiltros" variant="ghost" icon="x-mark">Limpiar</flux:button>
-        @endif
-    </div>
-
-    @if ($ultimaCarga)
-        <flux:text class="-mt-3 text-xs">
-            Última carga: {{ $ultimaCarga->archivo_imp }} · {{ $ultimaCarga->created_at->format('d/m/Y H:i') }}
-            @if ($ultimaCarga->usuario)
-                · {{ $ultimaCarga->usuario->nombre_usu }}
+            @if ($filtroUnidad !== '' || $busqueda !== '')
+                <flux:button wire:click="limpiarFiltros" variant="ghost" icon="cancel-01">Limpiar filtros</flux:button>
             @endif
-        </flux:text>
-    @endif
+        </div>
+
+        @if ($ultimaCarga)
+            <p class="mt-3 border-t border-zinc-100 pt-3 text-xs text-zinc-500 dark:border-white/10">
+                Última carga: <span class="font-medium text-zinc-700 dark:text-zinc-300">{{ $ultimaCarga->archivo_imp }}</span>
+                · {{ $ultimaCarga->created_at->format('d/m/Y H:i') }}
+                @if ($ultimaCarga->usuario)
+                    · {{ $ultimaCarga->usuario->nombre_usu }}
+                @endif
+            </p>
+        @endif
+    </x-panel>
 
     @if ($ultimaImportacion && $ultimaImportacion['errores'] !== [])
-        <flux:callout icon="exclamation-triangle" variant="danger">
+        <flux:callout icon="alert-02" variant="danger">
             <flux:callout.heading>{{ $ultimaImportacion['mensaje'] }}</flux:callout.heading>
             <flux:callout.text>
                 <ul class="mt-1 list-disc space-y-0.5 ps-5">
@@ -70,103 +73,112 @@
     @endif
 
     @if (! $proceso)
-        <flux:callout icon="information-circle" variant="secondary">
-            <flux:callout.text>Registra o elige un proceso de selección para ver sus puestos.</flux:callout.text>
-        </flux:callout>
+        <x-panel>
+            <div class="flex items-start gap-3">
+                <flux:icon.information-square class="size-5 shrink-0 text-zinc-400" />
+                <p class="text-sm text-zinc-600 dark:text-zinc-400">Registra o elige un proceso de selección para ver sus puestos.</p>
+            </div>
+        </x-panel>
     @else
-        <flux:table>
-            <flux:table.columns>
-                <flux:table.column>Código</flux:table.column>
-                <flux:table.column>Puesto</flux:table.column>
-                <flux:table.column align="center">Inscritos</flux:table.column>
-                <flux:table.column>Estado</flux:table.column>
-                <flux:table.column align="end">Acciones</flux:table.column>
-            </flux:table.columns>
+        <x-tabla.marco>
+            <flux:table>
+                <flux:table.columns>
+                    <flux:table.column class="w-32">Código</flux:table.column>
+                    <flux:table.column>Puesto</flux:table.column>
+                    <flux:table.column align="end">Inscritos</flux:table.column>
+                    <flux:table.column>Estado</flux:table.column>
+                    <flux:table.column align="end"><span class="sr-only">Acciones</span></flux:table.column>
+                </flux:table.columns>
 
-            <flux:table.rows>
-                @forelse ($porUnidad as $nombreUnidad => $grupo)
-                    {{-- Cabecera del grupo: la unidad y cuántos puestos e inscritos reúne. --}}
-                    <flux:table.row :key="'unidad-'.$loop->index" class="bg-zinc-50 dark:bg-zinc-900/60">
-                        <flux:table.cell colspan="5" class="py-2!">
-                            <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
-                                <flux:icon.building-office-2 variant="micro" class="text-pj-600 dark:text-pj-400" />
-                                <span class="text-xs font-semibold tracking-wide text-zinc-700 uppercase dark:text-zinc-200">
-                                    {{ $nombreUnidad !== '' ? $nombreUnidad : 'Sin unidad de organización' }}
-                                </span>
-                                <span class="text-xs text-zinc-500">
-                                    {{ $grupo->count() }} puesto(s) · {{ $grupo->sum('inscripciones_count') }} inscrito(s)
-                                </span>
-                            </div>
-                        </flux:table.cell>
-                    </flux:table.row>
-
-                    @foreach ($grupo as $puesto)
-                        <flux:table.row :key="$puesto->id_pue">
-                            <flux:table.cell class="ps-8!">
-                                <flux:badge size="sm" class="font-mono">{{ $puesto->codigo_pue }}</flux:badge>
-                            </flux:table.cell>
-
-                            <flux:table.cell class="text-sm font-medium whitespace-normal text-zinc-800 dark:text-zinc-200">
-                                {{ $puesto->nombre_pue }}
-                            </flux:table.cell>
-
-                            <flux:table.cell align="center" class="tabular-nums">
-                                @can(App\Enums\Permiso::InscripcionesVer->value)
-                                    <flux:link
-                                        :href="route('seleccion.inscripciones', ['proceso' => $proceso->codigo_pro, 'puesto' => $puesto->id_pue])"
-                                        wire:navigate
-                                    >
-                                        {{ $puesto->inscripciones_count }}
-                                    </flux:link>
-                                @else
-                                    {{ $puesto->inscripciones_count }}
-                                @endcan
-                            </flux:table.cell>
-
-                            <flux:table.cell>
-                                <x-estado.badge :estado="$puesto->estado_pue" />
-                            </flux:table.cell>
-
-                            <flux:table.cell align="end">
-                                <div class="flex justify-end gap-1">
-                                    @can(App\Enums\Permiso::PuestosEditar->value)
-                                        <x-tabla.accion wire:click="editar({{ $puesto->id_pue }})" icon="pencil-square" tooltip="Editar" />
-
-                                        <x-tabla.accion
-                                            wire:click="alternarEstado({{ $puesto->id_pue }})"
-                                            :icon="$puesto->estaHabilitado() ? 'eye-slash' : 'eye'"
-                                            :tooltip="$puesto->estaHabilitado() ? 'Deshabilitar' : 'Habilitar'"
-                                        />
-                                    @endcan
-
-                                    @can(App\Enums\Permiso::PuestosEliminar->value)
-                                        <x-tabla.accion
-                                            wire:click="eliminar({{ $puesto->id_pue }})"
-                                            wire:confirm="¿Eliminar el puesto {{ $puesto->codigo_pue }}?"
-                                            icon="trash"
-                                            tooltip="Eliminar"
-                                        />
-                                    @endcan
+                <flux:table.rows>
+                    @forelse ($porUnidad as $nombreUnidad => $grupo)
+                        {{-- Cabecera del grupo: la unidad y cuántos puestos e inscritos reúne. --}}
+                        <flux:table.row :key="'unidad-'.$loop->index" data-grupo>
+                            <flux:table.cell colspan="5" class="bg-zinc-50/70 py-2! dark:bg-white/[0.02]">
+                                <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                                    <flux:icon.building-03 class="size-4 shrink-0 text-pj-700 dark:text-pj-400" />
+                                    <span class="text-sm font-semibold text-zinc-900 dark:text-white">
+                                        {{ $nombreUnidad !== '' ? $nombreUnidad : 'Sin unidad de organización' }}
+                                    </span>
+                                    <span class="text-xs text-zinc-500 tabular-nums">
+                                        {{ $grupo->count() }} puesto(s) · {{ $grupo->sum('inscripciones_count') }} inscrito(s)
+                                    </span>
                                 </div>
                             </flux:table.cell>
                         </flux:table.row>
-                    @endforeach
-                @empty
-                    <x-tabla.vacia
-                        :columnas="5"
-                        :mensaje="$busqueda === '' && $filtroUnidad === ''
-                            ? 'El proceso todavía no tiene puestos. Impórtalos desde el Anexo 06-A.'
-                            : 'Ningún puesto coincide con los filtros.'"
-                        icono="briefcase"
-                    />
-                @endforelse
-            </flux:table.rows>
-        </flux:table>
+
+                        @foreach ($grupo as $puesto)
+                            <flux:table.row :key="$puesto->id_pue">
+                                <flux:table.cell class="ps-10!">
+                                    <span class="tabular-nums text-sm text-zinc-700 dark:text-zinc-300">{{ $puesto->codigo_pue }}</span>
+                                </flux:table.cell>
+
+                                <flux:table.cell class="text-sm whitespace-normal text-zinc-900 dark:text-white">
+                                    {{ $puesto->nombre_pue }}
+                                </flux:table.cell>
+
+                                <flux:table.cell align="end" class="tabular-nums">
+                                    @can(App\Enums\Permiso::InscripcionesVer->value)
+                                        <flux:link
+                                            :href="route('seleccion.inscripciones', ['proceso' => $proceso->codigo_pro, 'puesto' => $puesto->id_pue])"
+                                            wire:navigate
+                                        >
+                                            {{ $puesto->inscripciones_count }}
+                                        </flux:link>
+                                    @else
+                                        {{ $puesto->inscripciones_count }}
+                                    @endcan
+                                </flux:table.cell>
+
+                                <flux:table.cell>
+                                    <x-estado.badge :estado="$puesto->estado_pue" />
+                                </flux:table.cell>
+
+                                <flux:table.cell align="end">
+                                    <div class="flex justify-end gap-0.5">
+                                        @can(App\Enums\Permiso::PuestosEditar->value)
+                                            <x-tabla.accion wire:click="editar({{ $puesto->id_pue }})" icon="pencil-edit-02" tooltip="Editar" />
+
+                                            <x-tabla.accion
+                                                wire:click="alternarEstado({{ $puesto->id_pue }})"
+                                                :icon="$puesto->estaHabilitado() ? 'view-off-slash' : 'view'"
+                                                :tooltip="$puesto->estaHabilitado() ? 'Deshabilitar' : 'Habilitar'"
+                                            />
+                                        @endcan
+
+                                        @can(App\Enums\Permiso::PuestosEliminar->value)
+                                            <x-tabla.accion
+                                                wire:click="eliminar({{ $puesto->id_pue }})"
+                                                wire:confirm="¿Eliminar el puesto {{ $puesto->codigo_pue }}?"
+                                                icon="delete-02"
+                                                tooltip="Eliminar"
+                                            />
+                                        @endcan
+                                    </div>
+                                </flux:table.cell>
+                            </flux:table.row>
+                        @endforeach
+                    @empty
+                        <x-tabla.vacia
+                            :columnas="5"
+                            :mensaje="$busqueda === '' && $filtroUnidad === ''
+                                ? 'El proceso todavía no tiene puestos.'
+                                : 'Ningún puesto coincide con los filtros.'"
+                            icono="briefcase-01"
+                        >
+                            @if ($busqueda === '' && $filtroUnidad === '')
+                                Impórtalos desde el Anexo 06-A con el botón «Importar desde Excel».
+                            @endif
+                        </x-tabla.vacia>
+                    @endforelse
+                </flux:table.rows>
+            </flux:table>
+        </x-tabla.marco>
 
         @if ($puestos->isNotEmpty())
-            <flux:text class="text-xs">
+            <p class="text-sm text-zinc-500 tabular-nums">
                 {{ $puestos->count() }} puesto(s) en {{ $porUnidad->count() }} unidad(es) · {{ $puestos->sum('inscripciones_count') }} inscrito(s)
-            </flux:text>
+            </p>
         @endif
     @endif
 
@@ -222,12 +234,12 @@
                 <x-form.upload-dropzone
                     model="archivo"
                     accept=".xlsx"
-                    titulo="Click para elegir el Excel del Anexo 06-A"
+                    titulo="Elige el Excel del Anexo 06-A"
                     subtitulo="Formato .xlsx · máximo 10 MB"
                 >
                     @if ($archivo)
                         <div class="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-300">
-                            <flux:icon.document-text class="size-4 shrink-0" />
+                            <flux:icon.xls-02 class="size-4 shrink-0" />
                             <span class="truncate">{{ $archivo->getClientOriginalName() }}</span>
                         </div>
                     @endif
@@ -236,18 +248,18 @@
                 <flux:error name="archivo" />
             </flux:field>
 
-            <flux:text class="text-xs leading-relaxed">
+            <p class="text-sm leading-relaxed text-pretty text-zinc-500">
                 Se lee el listado de postulantes y se agrupan las columnas «CÓDIGO DE PUESTO», «PUESTO» y, si viene,
                 «UNIDAD DE ORGANIZACIÓN». Volver a subir el archivo no duplica nada: actualiza el nombre y la unidad de
                 los puestos que ya existen.
-            </flux:text>
+            </p>
 
             <div class="flex justify-end gap-2">
                 <flux:modal.close>
                     <flux:button variant="ghost">Cancelar</flux:button>
                 </flux:modal.close>
 
-                <flux:button type="submit" variant="primary" icon="arrow-up-tray">Importar</flux:button>
+                <flux:button type="submit" variant="primary" icon="upload-04">Importar</flux:button>
             </div>
         </form>
     </flux:modal>

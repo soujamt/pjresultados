@@ -5,92 +5,94 @@
     >
         <x-slot:acciones>
             @can(App\Enums\Permiso::ProcesosCrear->value)
-                <flux:button wire:click="nuevo" variant="primary" icon="plus">Nuevo proceso</flux:button>
+                <flux:button wire:click="nuevo" variant="primary" icon="plus-sign">Nuevo proceso</flux:button>
             @endcan
         </x-slot:acciones>
     </x-pagina.encabezado>
 
-    <flux:table>
-        <flux:table.columns>
-            <flux:table.column>Proceso</flux:table.column>
-            <flux:table.column>Evaluación técnica</flux:table.column>
-            <flux:table.column align="center">Puestos</flux:table.column>
-            <flux:table.column align="center">Inscritos</flux:table.column>
-            <flux:table.column>Estado</flux:table.column>
-            <flux:table.column align="end">Acciones</flux:table.column>
-        </flux:table.columns>
+    <x-tabla.marco>
+        <flux:table>
+            <flux:table.columns>
+                <flux:table.column>Proceso</flux:table.column>
+                <flux:table.column>Evaluación técnica</flux:table.column>
+                <flux:table.column align="end">Puestos</flux:table.column>
+                <flux:table.column align="end">Inscritos</flux:table.column>
+                <flux:table.column>Estado</flux:table.column>
+                <flux:table.column align="end"><span class="sr-only">Acciones</span></flux:table.column>
+            </flux:table.columns>
 
-        <flux:table.rows>
-            @forelse ($procesos as $proceso)
-                <flux:table.row :key="$proceso->id_pro">
-                    <flux:table.cell class="max-w-md">
-                        <flux:badge color="red" size="sm">{{ $proceso->codigo_pro }}</flux:badge>
-                        <div class="mt-1 text-sm whitespace-normal text-zinc-700 dark:text-zinc-300">{{ $proceso->nombre_pro }}</div>
-                        <div class="text-xs whitespace-normal text-zinc-500">
-                            {{ $proceso->entidad_pro }}
-                            @if ($proceso->regimen_pro)
-                                · {{ $proceso->regimen_pro }}
-                            @endif
-                        </div>
-                    </flux:table.cell>
+            <flux:table.rows>
+                @forelse ($procesos as $proceso)
+                    <flux:table.row :key="$proceso->id_pro">
+                        <flux:table.cell class="max-w-md whitespace-normal">
+                            <div class="tabular-nums text-xs font-medium text-pj-700 dark:text-pj-400">{{ $proceso->codigo_pro }}</div>
+                            <div class="mt-0.5 text-sm font-medium text-pretty text-zinc-900 dark:text-white">{{ $proceso->nombre_pro }}</div>
+                            <div class="mt-0.5 text-xs text-zinc-500">
+                                {{ $proceso->entidad_pro }}
+                                @if ($proceso->regimen_pro)
+                                    · {{ $proceso->regimen_pro }}
+                                @endif
+                            </div>
+                        </flux:table.cell>
 
-                    <flux:table.cell class="text-sm">
-                        <div>{{ $proceso->fecha_evaluacion_pro?->format('d/m/Y') ?? '—' }}</div>
-                        <div class="text-xs text-zinc-500">{{ $proceso->hora_evaluacion_pro }}</div>
-                    </flux:table.cell>
+                        <flux:table.cell class="text-sm">
+                            <div class="text-zinc-900 tabular-nums dark:text-white">{{ $proceso->fecha_evaluacion_pro?->format('d/m/Y') ?? '—' }}</div>
+                            <div class="text-xs text-zinc-500">{{ $proceso->hora_evaluacion_pro }}</div>
+                        </flux:table.cell>
 
-                    <flux:table.cell align="center">
-                        @can(App\Enums\Permiso::PuestosVer->value)
-                            <flux:link :href="route('seleccion.puestos', ['proceso' => $proceso->codigo_pro])" wire:navigate>
+                        <flux:table.cell align="end" class="tabular-nums">
+                            @can(App\Enums\Permiso::PuestosVer->value)
+                                <flux:link :href="route('seleccion.puestos', ['proceso' => $proceso->codigo_pro])" wire:navigate>
+                                    {{ $proceso->puestos_count }}
+                                </flux:link>
+                            @else
                                 {{ $proceso->puestos_count }}
-                            </flux:link>
-                        @else
-                            {{ $proceso->puestos_count }}
-                        @endcan
-                    </flux:table.cell>
+                            @endcan
+                        </flux:table.cell>
 
-                    <flux:table.cell align="center">
-                        @can(App\Enums\Permiso::InscripcionesVer->value)
-                            <flux:link :href="route('seleccion.inscripciones', ['proceso' => $proceso->codigo_pro])" wire:navigate>
+                        <flux:table.cell align="end" class="tabular-nums">
+                            @can(App\Enums\Permiso::InscripcionesVer->value)
+                                <flux:link :href="route('seleccion.inscripciones', ['proceso' => $proceso->codigo_pro])" wire:navigate>
+                                    {{ $proceso->inscripciones_count }}
+                                </flux:link>
+                            @else
                                 {{ $proceso->inscripciones_count }}
-                            </flux:link>
-                        @else
-                            {{ $proceso->inscripciones_count }}
-                        @endcan
-                    </flux:table.cell>
-
-                    <flux:table.cell>
-                        <x-estado.badge :estado="$proceso->estado_pro" />
-                    </flux:table.cell>
-
-                    <flux:table.cell align="end">
-                        <div class="flex justify-end gap-1">
-                            @can(App\Enums\Permiso::ProcesosEditar->value)
-                                <x-tabla.accion wire:click="editar({{ $proceso->id_pro }})" icon="pencil-square" tooltip="Editar" />
-
-                                <x-tabla.accion
-                                    wire:click="alternarEstado({{ $proceso->id_pro }})"
-                                    :icon="$proceso->estaHabilitado() ? 'eye-slash' : 'eye'"
-                                    :tooltip="$proceso->estaHabilitado() ? 'Deshabilitar' : 'Habilitar'"
-                                />
                             @endcan
+                        </flux:table.cell>
 
-                            @can(App\Enums\Permiso::ProcesosEliminar->value)
-                                <x-tabla.accion
-                                    wire:click="eliminar({{ $proceso->id_pro }})"
-                                    wire:confirm="¿Eliminar el proceso {{ $proceso->codigo_pro }}?"
-                                    icon="trash"
-                                    tooltip="Eliminar"
-                                />
-                            @endcan
-                        </div>
-                    </flux:table.cell>
-                </flux:table.row>
-            @empty
-                <x-tabla.vacia :columnas="6" mensaje="Todavía no hay procesos registrados." icono="calendar-days" />
-            @endforelse
-        </flux:table.rows>
-    </flux:table>
+                        <flux:table.cell>
+                            <x-estado.badge :estado="$proceso->estado_pro" />
+                        </flux:table.cell>
+
+                        <flux:table.cell align="end">
+                            <div class="flex justify-end gap-0.5">
+                                @can(App\Enums\Permiso::ProcesosEditar->value)
+                                    <x-tabla.accion wire:click="editar({{ $proceso->id_pro }})" icon="pencil-edit-02" tooltip="Editar" />
+
+                                    <x-tabla.accion
+                                        wire:click="alternarEstado({{ $proceso->id_pro }})"
+                                        :icon="$proceso->estaHabilitado() ? 'view-off-slash' : 'view'"
+                                        :tooltip="$proceso->estaHabilitado() ? 'Deshabilitar' : 'Habilitar'"
+                                    />
+                                @endcan
+
+                                @can(App\Enums\Permiso::ProcesosEliminar->value)
+                                    <x-tabla.accion
+                                        wire:click="eliminar({{ $proceso->id_pro }})"
+                                        wire:confirm="¿Eliminar el proceso {{ $proceso->codigo_pro }}?"
+                                        icon="delete-02"
+                                        tooltip="Eliminar"
+                                    />
+                                @endcan
+                            </div>
+                        </flux:table.cell>
+                    </flux:table.row>
+                @empty
+                    <x-tabla.vacia :columnas="6" mensaje="Todavía no hay procesos registrados." icono="calendar-03" />
+                @endforelse
+            </flux:table.rows>
+        </flux:table>
+    </x-tabla.marco>
 
     <flux:modal name="proceso" class="w-full md:max-w-2xl">
         <form wire:submit="guardar" class="space-y-6">

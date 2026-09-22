@@ -1,21 +1,23 @@
-{{-- Cabecera comun de las pantallas de configuracion: titulo, bajada y acciones. --}}
+{{-- Encabezado de cada pantalla: título, una línea de contexto y las acciones a la derecha. --}}
 @props([
     'titulo',
     'bajada' => null,
 ])
 
-<div {{ $attributes->merge(['class' => 'flex flex-wrap items-start justify-between gap-4']) }}>
-    <div class="min-w-0">
-        <flux:heading size="xl" level="1">{{ $titulo }}</flux:heading>
+<header {{ $attributes->merge(['class' => 'flex flex-wrap items-end justify-between gap-x-6 gap-y-4']) }}>
+    <div class="min-w-0 max-w-3xl">
+        <h1 class="text-xl leading-tight font-semibold tracking-tight text-balance text-zinc-900 dark:text-white">
+            {{ $titulo }}
+        </h1>
 
         @if ($bajada)
-            <flux:subheading class="mt-1">{{ $bajada }}</flux:subheading>
+            <p class="mt-1.5 text-sm leading-relaxed text-pretty text-zinc-600 dark:text-zinc-400">{{ $bajada }}</p>
         @endif
     </div>
 
-    @if (isset($acciones))
+    @isset($acciones)
         <div class="flex shrink-0 flex-wrap items-center gap-2">
             {{ $acciones }}
         </div>
-    @endif
-</div>
+    @endisset
+</header>

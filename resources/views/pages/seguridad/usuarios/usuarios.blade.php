@@ -2,83 +2,94 @@
     <x-pagina.encabezado titulo="Usuarios" bajada="Cuentas con acceso al sistema y el rol que define lo que pueden hacer.">
         <x-slot:acciones>
             @can(App\Enums\Permiso::UsuariosCrear->value)
-                <flux:button wire:click="nuevo" variant="primary" icon="plus">Nuevo usuario</flux:button>
+                <flux:button wire:click="nuevo" variant="primary" icon="plus-sign">Nuevo usuario</flux:button>
             @endcan
         </x-slot:acciones>
     </x-pagina.encabezado>
 
-    <div class="w-full sm:w-72">
-        <flux:input wire:model.live.debounce.300ms="busqueda" icon="magnifying-glass" placeholder="Buscar por nombre o correo" clearable />
-    </div>
+    <x-panel>
+        <div class="w-full sm:w-80">
+            <flux:input wire:model.live.debounce.300ms="busqueda" icon="search-01" placeholder="Buscar por nombre o correo" clearable />
+        </div>
+    </x-panel>
 
-    <flux:table>
-        <flux:table.columns>
-            <flux:table.column>Usuario</flux:table.column>
-            <flux:table.column>Rol</flux:table.column>
-            <flux:table.column>Estado</flux:table.column>
-            <flux:table.column align="end">Acciones</flux:table.column>
-        </flux:table.columns>
+    <x-tabla.marco>
+        <flux:table>
+            <flux:table.columns>
+                <flux:table.column>Usuario</flux:table.column>
+                <flux:table.column>Rol</flux:table.column>
+                <flux:table.column>Estado</flux:table.column>
+                <flux:table.column align="end"><span class="sr-only">Acciones</span></flux:table.column>
+            </flux:table.columns>
 
-        <flux:table.rows>
-            @forelse ($usuarios as $usuario)
-                <flux:table.row :key="$usuario->id_usu">
-                    <flux:table.cell>
-                        <div class="flex items-center gap-3">
-                            <flux:avatar size="sm" :initials="$usuario->iniciales()" />
-                            <div>
-                                <div class="text-sm font-medium text-zinc-800 dark:text-zinc-200">
-                                    {{ $usuario->nombre_usu }}
-                                    @if ($usuario->is(auth()->user()))
-                                        <span class="text-xs font-normal text-zinc-500">(tú)</span>
-                                    @endif
+            <flux:table.rows>
+                @forelse ($usuarios as $usuario)
+                    <flux:table.row :key="$usuario->id_usu">
+                        <flux:table.cell>
+                            <div class="flex items-center gap-3">
+                                <flux:avatar size="sm" :initials="$usuario->iniciales()" />
+                                <div class="min-w-0">
+                                    <div class="truncate text-sm font-medium text-zinc-900 dark:text-white">
+                                        {{ $usuario->nombre_usu }}
+                                        @if ($usuario->is(auth()->user()))
+                                            <span class="ms-1 text-xs font-normal text-zinc-500">(tú)</span>
+                                        @endif
+                                    </div>
+                                    <div class="truncate text-xs text-zinc-500">{{ $usuario->usuario_usu }}</div>
                                 </div>
-                                <div class="text-xs text-zinc-500">{{ $usuario->usuario_usu }}</div>
                             </div>
-                        </div>
-                    </flux:table.cell>
+                        </flux:table.cell>
 
-                    <flux:table.cell>
-                        <flux:badge size="sm" :color="$usuario->rol?->es_super_rol ? 'red' : 'zinc'">
-                            {{ $usuario->rol?->nombre_rol ?? 'Sin rol' }}
-                        </flux:badge>
-                    </flux:table.cell>
+                        <flux:table.cell>
+                            <span @class([
+                                'inline-flex items-center gap-1.5 text-sm',
+                                'font-medium text-pj-700 dark:text-pj-400' => $usuario->rol?->es_super_rol,
+                                'text-zinc-700 dark:text-zinc-300' => ! $usuario->rol?->es_super_rol,
+                            ])>
+                                @if ($usuario->rol?->es_super_rol)
+                                    <flux:icon.shield-user class="size-4" />
+                                @endif
+                                {{ $usuario->rol?->nombre_rol ?? 'Sin rol' }}
+                            </span>
+                        </flux:table.cell>
 
-                    <flux:table.cell>
-                        <x-estado.badge :estado="$usuario->estado_usu" />
-                    </flux:table.cell>
+                        <flux:table.cell>
+                            <x-estado.badge :estado="$usuario->estado_usu" />
+                        </flux:table.cell>
 
-                    <flux:table.cell align="end">
-                        <div class="flex justify-end gap-1">
-                            @can(App\Enums\Permiso::UsuariosEditar->value)
-                                <x-tabla.accion wire:click="editar({{ $usuario->id_usu }})" icon="pencil-square" tooltip="Editar" />
+                        <flux:table.cell align="end">
+                            <div class="flex justify-end gap-0.5">
+                                @can(App\Enums\Permiso::UsuariosEditar->value)
+                                    <x-tabla.accion wire:click="editar({{ $usuario->id_usu }})" icon="pencil-edit-02" tooltip="Editar" />
 
-                                @unless ($usuario->is(auth()->user()))
-                                    <x-tabla.accion
-                                        wire:click="alternarEstado({{ $usuario->id_usu }})"
-                                        :icon="$usuario->estaHabilitado() ? 'eye-slash' : 'eye'"
-                                        :tooltip="$usuario->estaHabilitado() ? 'Deshabilitar' : 'Habilitar'"
-                                    />
-                                @endunless
-                            @endcan
+                                    @unless ($usuario->is(auth()->user()))
+                                        <x-tabla.accion
+                                            wire:click="alternarEstado({{ $usuario->id_usu }})"
+                                            :icon="$usuario->estaHabilitado() ? 'view-off-slash' : 'view'"
+                                            :tooltip="$usuario->estaHabilitado() ? 'Deshabilitar' : 'Habilitar'"
+                                        />
+                                    @endunless
+                                @endcan
 
-                            @can(App\Enums\Permiso::UsuariosEliminar->value)
-                                @unless ($usuario->is(auth()->user()))
-                                    <x-tabla.accion
-                                        wire:click="eliminar({{ $usuario->id_usu }})"
-                                        wire:confirm="¿Eliminar la cuenta de {{ $usuario->nombre_usu }}?"
-                                        icon="trash"
-                                        tooltip="Eliminar"
-                                    />
-                                @endunless
-                            @endcan
-                        </div>
-                    </flux:table.cell>
-                </flux:table.row>
-            @empty
-                <x-tabla.vacia :columnas="4" mensaje="Ningún usuario coincide con la búsqueda." icono="users" />
-            @endforelse
-        </flux:table.rows>
-    </flux:table>
+                                @can(App\Enums\Permiso::UsuariosEliminar->value)
+                                    @unless ($usuario->is(auth()->user()))
+                                        <x-tabla.accion
+                                            wire:click="eliminar({{ $usuario->id_usu }})"
+                                            wire:confirm="¿Eliminar la cuenta de {{ $usuario->nombre_usu }}?"
+                                            icon="delete-02"
+                                            tooltip="Eliminar"
+                                        />
+                                    @endunless
+                                @endcan
+                            </div>
+                        </flux:table.cell>
+                    </flux:table.row>
+                @empty
+                    <x-tabla.vacia :columnas="4" mensaje="Ningún usuario coincide con la búsqueda." icono="user-multiple" />
+                @endforelse
+            </flux:table.rows>
+        </flux:table>
+    </x-tabla.marco>
 
     <flux:modal name="usuario" class="w-full md:max-w-lg">
         <form wire:submit="guardar" class="space-y-6">

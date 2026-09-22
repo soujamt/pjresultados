@@ -5,85 +5,87 @@
     >
         <x-slot:acciones>
             @can(App\Enums\Permiso::RolesCrear->value)
-                <flux:button wire:click="nuevo" variant="primary" icon="plus">Nuevo rol</flux:button>
+                <flux:button wire:click="nuevo" variant="primary" icon="plus-sign">Nuevo rol</flux:button>
             @endcan
         </x-slot:acciones>
     </x-pagina.encabezado>
 
-    <flux:table>
-        <flux:table.columns>
-            <flux:table.column>Rol</flux:table.column>
-            <flux:table.column>Permisos</flux:table.column>
-            <flux:table.column align="center">Usuarios</flux:table.column>
-            <flux:table.column>Estado</flux:table.column>
-            <flux:table.column align="end">Acciones</flux:table.column>
-        </flux:table.columns>
+    <x-tabla.marco>
+        <flux:table>
+            <flux:table.columns>
+                <flux:table.column>Rol</flux:table.column>
+                <flux:table.column>Permisos</flux:table.column>
+                <flux:table.column align="end">Usuarios</flux:table.column>
+                <flux:table.column>Estado</flux:table.column>
+                <flux:table.column align="end"><span class="sr-only">Acciones</span></flux:table.column>
+            </flux:table.columns>
 
-        <flux:table.rows>
-            @forelse ($roles as $rol)
-                <flux:table.row :key="$rol->id_rol">
-                    <flux:table.cell class="max-w-sm">
-                        <div class="flex items-center gap-2 text-sm font-medium text-zinc-800 dark:text-zinc-200">
-                            {{ $rol->nombre_rol }}
-                            @if ($rol->es_super_rol)
-                                <flux:icon.shield-check variant="micro" class="text-pj-600 dark:text-pj-400" />
+            <flux:table.rows>
+                @forelse ($roles as $rol)
+                    <flux:table.row :key="$rol->id_rol">
+                        <flux:table.cell class="max-w-sm whitespace-normal">
+                            <div class="flex items-center gap-2 text-sm font-medium text-zinc-900 dark:text-white">
+                                @if ($rol->es_super_rol)
+                                    <flux:icon.shield-user class="size-4 text-pj-700 dark:text-pj-400" />
+                                @endif
+                                {{ $rol->nombre_rol }}
+                            </div>
+                            @if ($rol->descripcion_rol)
+                                <div class="mt-0.5 text-xs text-pretty text-zinc-500">{{ $rol->descripcion_rol }}</div>
                             @endif
-                        </div>
-                        @if ($rol->descripcion_rol)
-                            <div class="text-xs whitespace-normal text-zinc-500">{{ $rol->descripcion_rol }}</div>
-                        @endif
-                    </flux:table.cell>
+                        </flux:table.cell>
 
-                    <flux:table.cell>
-                        @if ($rol->es_super_rol)
-                            <flux:badge color="red" size="sm">Acceso total</flux:badge>
-                        @else
-                            <span class="text-sm tabular-nums">{{ count($rol->permisos()) }} de {{ $totalPermisos }}</span>
-                        @endif
-                    </flux:table.cell>
+                        <flux:table.cell class="text-sm">
+                            @if ($rol->es_super_rol)
+                                <span class="font-medium text-pj-700 dark:text-pj-400">Acceso total</span>
+                            @else
+                                <span class="text-zinc-700 tabular-nums dark:text-zinc-300">{{ count($rol->permisos()) }} de {{ $totalPermisos }}</span>
+                            @endif
+                        </flux:table.cell>
 
-                    <flux:table.cell align="center" class="tabular-nums">{{ $rol->usuarios_count }}</flux:table.cell>
+                        <flux:table.cell align="end" class="tabular-nums">{{ $rol->usuarios_count }}</flux:table.cell>
 
-                    <flux:table.cell>
-                        <x-estado.badge :estado="$rol->estado_rol" />
-                    </flux:table.cell>
+                        <flux:table.cell>
+                            <x-estado.badge :estado="$rol->estado_rol" />
+                        </flux:table.cell>
 
-                    <flux:table.cell align="end">
-                        <div class="flex justify-end gap-1">
-                            @can(App\Enums\Permiso::RolesEditar->value)
-                                <x-tabla.accion
-                                    wire:click="editar({{ $rol->id_rol }})"
-                                    :icon="$rol->es_super_rol ? 'eye' : 'pencil-square'"
-                                    :tooltip="$rol->es_super_rol ? 'Ver permisos' : 'Editar'"
-                                />
-
-                                @unless ($rol->es_super_rol)
+                        <flux:table.cell align="end">
+                            <div class="flex justify-end gap-0.5">
+                                @can(App\Enums\Permiso::RolesEditar->value)
                                     <x-tabla.accion
-                                        wire:click="alternarEstado({{ $rol->id_rol }})"
-                                        :icon="$rol->estaHabilitado() ? 'eye-slash' : 'eye'"
-                                        :tooltip="$rol->estaHabilitado() ? 'Deshabilitar' : 'Habilitar'"
+                                        wire:click="editar({{ $rol->id_rol }})"
+                                        :icon="$rol->es_super_rol ? 'view' : 'pencil-edit-02'"
+                                        :tooltip="$rol->es_super_rol ? 'Ver permisos' : 'Editar'"
                                     />
-                                @endunless
-                            @endcan
 
-                            @can(App\Enums\Permiso::RolesEliminar->value)
-                                @unless ($rol->es_super_rol)
-                                    <x-tabla.accion
-                                        wire:click="eliminar({{ $rol->id_rol }})"
-                                        wire:confirm="¿Eliminar el rol {{ $rol->nombre_rol }}?"
-                                        icon="trash"
-                                        tooltip="Eliminar"
-                                    />
-                                @endunless
-                            @endcan
-                        </div>
-                    </flux:table.cell>
-                </flux:table.row>
-            @empty
-                <x-tabla.vacia :columnas="5" mensaje="Todavía no hay roles registrados." icono="shield-check" />
-            @endforelse
-        </flux:table.rows>
-    </flux:table>
+                                    @unless ($rol->es_super_rol)
+                                        <x-tabla.accion
+                                            wire:click="alternarEstado({{ $rol->id_rol }})"
+                                            :icon="$rol->estaHabilitado() ? 'view-off-slash' : 'view'"
+                                            :tooltip="$rol->estaHabilitado() ? 'Deshabilitar' : 'Habilitar'"
+                                        />
+                                    @endunless
+                                @endcan
+
+                                @can(App\Enums\Permiso::RolesEliminar->value)
+                                    @unless ($rol->es_super_rol)
+                                        <x-tabla.accion
+                                            wire:click="eliminar({{ $rol->id_rol }})"
+                                            wire:confirm="¿Eliminar el rol {{ $rol->nombre_rol }}?"
+                                            icon="delete-02"
+                                            tooltip="Eliminar"
+                                        />
+                                    @endunless
+                                @endcan
+                            </div>
+                        </flux:table.cell>
+                    </flux:table.row>
+                @empty
+                    <x-tabla.vacia :columnas="5" mensaje="Todavía no hay roles registrados." icono="shield-user" />
+                @endforelse
+            </flux:table.rows>
+        </flux:table>
+    </x-tabla.marco>
 
     <flux:modal name="rol" class="w-full md:max-w-3xl">
         <form wire:submit="guardar" class="space-y-6">
@@ -105,13 +107,14 @@
             <flux:input wire:model="form.descripcion" label="Descripción" />
 
             @if ($form->esSuper)
-                <flux:callout icon="shield-check" color="red">
-                    <flux:callout.heading>Super administrador</flux:callout.heading>
-                    <flux:callout.text>
+                <div class="flex items-start gap-3 rounded-lg bg-pj-50 px-4 py-3 text-sm text-pj-900 dark:bg-pj-950/40 dark:text-pj-200">
+                    <flux:icon.shield-user class="mt-0.5 size-5 shrink-0 text-pj-700 dark:text-pj-400" />
+                    <p class="leading-relaxed text-pretty">
+                        <span class="font-semibold">Super administrador.</span>
                         Este rol tiene acceso a todo el sistema, incluidas las acciones que se agreguen más adelante.
                         Sus permisos no se pueden restringir.
-                    </flux:callout.text>
-                </flux:callout>
+                    </p>
+                </div>
             @endif
 
             <div class="space-y-3">
@@ -119,20 +122,20 @@
 
                 <div class="grid gap-3 sm:grid-cols-2">
                     @foreach ($permisosAgrupados as $recurso => $permisos)
-                        <div class="rounded-lg border border-zinc-200 p-3 dark:border-zinc-700" wire:key="recurso-{{ $recurso }}">
-                            <div class="mb-2 flex items-center justify-between gap-2">
-                                <span class="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                        <div class="rounded-lg bg-zinc-50 p-3.5 dark:bg-white/[0.03]" wire:key="recurso-{{ $recurso }}">
+                            <div class="mb-2.5 flex items-center justify-between gap-2">
+                                <span class="text-xs font-semibold tracking-[0.04em] text-zinc-600 uppercase dark:text-zinc-300">
                                     {{ App\Enums\Permiso::nombreDelRecurso($recurso) }}
                                 </span>
 
                                 @unless ($form->esSuper)
                                     <flux:button size="xs" variant="ghost" wire:click="alternarRecurso('{{ $recurso }}')">
-                                        Todos
+                                        Marcar todos
                                     </flux:button>
                                 @endunless
                             </div>
 
-                            <div class="space-y-1.5">
+                            <div class="space-y-2">
                                 @foreach ($permisos as $permiso)
                                     <flux:checkbox
                                         wire:model="form.permisos"

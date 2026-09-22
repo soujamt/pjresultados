@@ -8,8 +8,8 @@
 
 @theme {
     --font-sans:
-        Inter, 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+        Inter, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+        'Noto Color Emoji';
 
     --color-zinc-50: var(--color-neutral-50);
     --color-zinc-100: var(--color-neutral-100);
@@ -41,6 +41,22 @@
     --color-pj-800: oklch(0.405 0.142 29);
     --color-pj-900: oklch(0.335 0.11 28);
     --color-pj-950: oklch(0.23 0.075 27);
+}
+
+/*
+ * Public Sans la sirve el propio servidor (vite.config.js) y solo la carga el
+ * layout del sistema interno; si el @fonts no está en la página, la variable
+ * no existe y se cae a la fuente del sistema operativo. Es la tipografía del
+ * sistema de diseño del gobierno de EE. UU.: neutra, sobria y con cifras
+ * tabulares, que es lo que alinea los DNI y los totales en las tablas.
+ */
+@theme inline {
+    --font-institucional: var(--fuente-institucional, ui-sans-serif), system-ui, sans-serif;
+}
+
+/* Superficie elevada: un anillo de 1px y dos sombras suaves en vez de un borde. */
+@utility sombra-borde {
+    box-shadow: var(--sombra-borde);
 }
 
 /*
@@ -103,4 +119,139 @@ ui-field {
 
 [x-cloak] {
     display: none !important;
+}
+
+/*
+ * ─── Sistema interno ─────────────────────────────────────────────────────────
+ *
+ * Todo lo que sigue aplica solo dentro de <body class="sistema">. La pantalla
+ * de acceso tiene su propio diseño y no debe cambiar con estos ajustes.
+ *
+ * Criterio: superficies blancas sobre un fondo gris muy claro, el guinda
+ * reservado para la acción principal y la sección activa, y la estructura
+ * resuelta con espacio antes que con líneas.
+ */
+.sistema {
+    --sombra-borde:
+        0 0 0 1px oklch(0 0 0 / 0.06), 0 1px 2px -1px oklch(0 0 0 / 0.06), 0 2px 4px 0 oklch(0 0 0 / 0.04);
+    --sombra-borde-hover:
+        0 0 0 1px oklch(0 0 0 / 0.08), 0 1px 2px -1px oklch(0 0 0 / 0.08), 0 2px 4px 0 oklch(0 0 0 / 0.06);
+}
+
+.dark .sistema {
+    --sombra-borde: 0 0 0 1px oklch(1 0 0 / 0.08);
+    --sombra-borde-hover: 0 0 0 1px oklch(1 0 0 / 0.13);
+}
+
+.sistema ::selection {
+    background-color: var(--color-pj-100);
+    color: var(--color-pj-950);
+}
+
+/*
+ * Respuesta táctil al pulsar. La escala es exactamente 0.96: menos se siente
+ * exagerado. Solo se anima lo que cambia.
+ */
+.sistema [data-flux-button] {
+    transition-property: scale, color, background-color, border-color, box-shadow, opacity;
+    transition-duration: 150ms;
+    transition-timing-function: ease-out;
+}
+
+.sistema [data-flux-button]:active:not(:disabled) {
+    scale: 0.96;
+}
+
+/*
+ * Menú lateral: la sección activa lleva el guinda en el texto, un fondo
+ * apenas teñido y una barra corta al inicio, como en los sistemas del Estado.
+ */
+.sistema [data-flux-sidebar-item] {
+    border-radius: 0.375rem;
+    font-weight: 500;
+}
+
+.sistema [data-flux-sidebar-item][data-current] {
+    border-color: transparent;
+    background-color: var(--color-pj-50);
+    color: var(--color-pj-800);
+    box-shadow: none;
+}
+
+.sistema [data-flux-sidebar-item][data-current]::before {
+    content: '';
+    position: absolute;
+    inset-block: 0.5rem;
+    inset-inline-start: 0;
+    width: 2px;
+    border-radius: 9999px;
+    background-color: var(--color-pj-700);
+}
+
+.sistema [data-flux-sidebar-item][data-current] [data-flux-icon] {
+    color: var(--color-pj-700);
+}
+
+.dark .sistema [data-flux-sidebar-item][data-current] {
+    background-color: oklch(1 0 0 / 0.06);
+    color: var(--color-pj-300);
+}
+
+.dark .sistema [data-flux-sidebar-item][data-current]::before {
+    background-color: var(--color-pj-400);
+}
+
+.dark .sistema [data-flux-sidebar-item][data-current] [data-flux-icon] {
+    color: var(--color-pj-400);
+}
+
+/*
+ * Tablas dentro de <x-tabla.marco>: cabecera en versalitas sobre gris, filas
+ * compactas y el margen interior que Flux quita en la primera y última celda.
+ */
+.sistema .tabla-marco [data-flux-column] {
+    background-color: var(--color-zinc-50);
+    padding-block: 0.625rem;
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-zinc-500);
+}
+
+.sistema .tabla-marco [data-flux-cell] {
+    padding-block: 0.625rem;
+}
+
+.sistema .tabla-marco [data-flux-column]:first-child,
+.sistema .tabla-marco [data-flux-cell]:first-child {
+    padding-inline-start: 1rem;
+}
+
+.sistema .tabla-marco [data-flux-column]:last-child,
+.sistema .tabla-marco [data-flux-cell]:last-child {
+    padding-inline-end: 1rem;
+}
+
+.sistema .tabla-marco tbody [data-flux-row]:not([data-grupo]):hover > [data-flux-cell] {
+    background-color: oklch(0 0 0 / 0.018);
+}
+
+.dark .sistema .tabla-marco [data-flux-column] {
+    background-color: oklch(1 0 0 / 0.03);
+    color: var(--color-zinc-400);
+}
+
+.dark .sistema .tabla-marco tbody [data-flux-row]:not([data-grupo]):hover > [data-flux-cell] {
+    background-color: oklch(1 0 0 / 0.025);
+}
+
+.sistema .tabla-marco [data-flux-pagination] {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--color-zinc-200);
+}
+
+.dark .sistema .tabla-marco [data-flux-pagination] {
+    border-top-color: oklch(1 0 0 / 0.08);
 }
