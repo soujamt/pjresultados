@@ -88,14 +88,16 @@
             <div class="flex justify-end">
                 <flux:button
                     x-data
-                    x-on:click="$flux.dark = !$flux.dark"
-                    icon="moon"
-                    icon:variant="outline"
+                    x-on:click="cambiarSinTransiciones(() => $flux.dark = ! $flux.dark)"
                     variant="ghost"
                     size="sm"
+                    square
                     class="text-zinc-500 dark:text-zinc-400"
                     aria-label="Cambiar entre modo claro y oscuro"
-                />
+                >
+                    <flux:icon.moon-02 variant="mini" class="dark:hidden" />
+                    <flux:icon.sun-03 variant="mini" class="hidden dark:block" />
+                </flux:button>
             </div>
 
             <div class="flex flex-1 items-center justify-center py-8">

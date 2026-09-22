@@ -13,7 +13,7 @@
             label="Correo"
             placeholder="correo@pj.gob.pe"
             autocomplete="username"
-            icon="envelope"
+            icon="mail-01"
             autofocus
         />
 
@@ -23,7 +23,7 @@
             label="Contraseña"
             placeholder="••••••••"
             autocomplete="current-password"
-            icon="lock-closed"
+            icon="square-lock-02"
             viewable
         />
 
