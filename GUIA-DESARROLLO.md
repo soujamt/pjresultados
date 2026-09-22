@@ -162,7 +162,7 @@ tests/Feature/            Pruebas por módulo; tests/Support arma Excel de prueb
 
 **Excel**
 - Una columna que cruza otro sistema (como el DNI para la lectora) se escribe **siempre como texto** con
-  `WithCustomValueBinder`: PhpSpreadsheet guarda «72540243» como número y «01234567» como texto.
+  `WithCustomValueBinder`: PhpSpreadsheet guarda «87654321» como número y «01234567» como texto.
 
 ---
 

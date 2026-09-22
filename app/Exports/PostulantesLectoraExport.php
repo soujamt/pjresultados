@@ -133,7 +133,7 @@ class PostulantesLectoraExport extends DefaultValueBinder implements FromCollect
     /**
      * Toda la columna del DNI va como texto. El enlazador por omision la
      * partiria en dos tipos: el DNI que empieza en cero lo deja en texto, pero
-     * «72540243» lo escribe como numero. `WithColumnFormatting` solo cambia
+     * «87654321» lo escribe como numero. `WithColumnFormatting` solo cambia
      * como se ve la celda, no el tipo con que se guarda, y una columna de
      * busqueda con dos tipos es lo que hace fallar el cruce en la lectora.
      */
