@@ -27,19 +27,20 @@
     --color-accent-content: var(--color-pj-700);
     --color-accent-foreground: var(--color-white);
 
-    /** Identidad institucional del Poder Judicial: el rojo guinda de su
-     ** escudo, con la luminosidad ajustada para usarlo como color de interfaz. **/
-    --color-pj-50: oklch(0.971 0.013 17);
-    --color-pj-100: oklch(0.936 0.032 17);
-    --color-pj-200: oklch(0.885 0.062 18);
-    --color-pj-300: oklch(0.808 0.114 19);
-    --color-pj-400: oklch(0.704 0.171 22);
-    --color-pj-500: oklch(0.62 0.2 25);
-    --color-pj-600: oklch(0.53 0.19 25);
-    --color-pj-700: oklch(0.46 0.165 24);
-    --color-pj-800: oklch(0.39 0.135 23);
-    --color-pj-900: oklch(0.32 0.105 22);
-    --color-pj-950: oklch(0.22 0.07 22);
+    /** Identidad institucional del Poder Judicial. El paso 700 es el rojo del
+     ** logo oficial (#a82214); el resto de la escala conserva su matiz y solo
+     ** mueve la luminosidad, para usarlo como color de interfaz. **/
+    --color-pj-50: oklch(0.971 0.013 25);
+    --color-pj-100: oklch(0.936 0.031 26);
+    --color-pj-200: oklch(0.885 0.06 27);
+    --color-pj-300: oklch(0.808 0.106 28);
+    --color-pj-400: oklch(0.704 0.158 29);
+    --color-pj-500: oklch(0.61 0.19 29);
+    --color-pj-600: oklch(0.54 0.185 30);
+    --color-pj-700: oklch(0.477 0.172 30);
+    --color-pj-800: oklch(0.405 0.142 29);
+    --color-pj-900: oklch(0.335 0.11 28);
+    --color-pj-950: oklch(0.23 0.075 27);
 }
 
 /*

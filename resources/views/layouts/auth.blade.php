@@ -6,6 +6,8 @@
 
     <title>{{ $title ?? config('app.name') }}</title>
 
+    <x-marca.iconos />
+
     <link rel="preconnect" href="https://fonts.bunny.net" />
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600&display=swap" rel="stylesheet" />
 
@@ -39,23 +41,26 @@
                 "
             ></div>
 
-            <flux:icon.scale
-                variant="outline"
+            {{-- El isologo como sello al margen, en blanco y desbordado a propósito. --}}
+            <x-marca.isologo
                 aria-hidden="true"
-                class="pointer-events-none absolute -right-24 -bottom-24 size-[30rem] text-white opacity-[0.05]"
+                alt=""
+                class="pointer-events-none absolute -right-20 -bottom-20 h-[24rem] w-auto opacity-[0.06] brightness-0 invert"
             />
 
-            <div class="relative flex items-center gap-4">
-                <div class="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-white shadow-xl shadow-black/20">
-                    <flux:icon.scale variant="outline" class="size-9 text-pj-700" />
+            {{--
+                El logo oficial va sobre blanco, como en sus piezas impresas: sus
+                rojos se pierden directamente sobre el guinda del panel.
+            --}}
+            <div class="relative">
+                <div class="inline-flex rounded-2xl bg-white px-6 py-5 shadow-xl shadow-black/25">
+                    <x-marca.logo class="h-24" solo-claro />
                 </div>
 
-                <div class="text-white">
-                    <div class="text-sm leading-tight font-semibold tracking-tight">
-                        Poder Judicial del Perú
-                    </div>
-                    <div class="mt-1 text-xs text-white/60">Corte Superior de Justicia de Ucayali · Pucallpa</div>
+                <div class="mt-5 text-sm font-semibold tracking-tight text-white">
+                    Corte Superior de Justicia de Ucayali
                 </div>
+                <div class="mt-0.5 text-xs text-white/60">Pucallpa · Ucayali</div>
             </div>
 
             <div class="relative max-w-md">
@@ -96,8 +101,8 @@
             <div class="flex flex-1 items-center justify-center py-8">
                 <div class="w-full max-w-sm">
                     {{-- La marca se repite aqui solo donde el panel no se ve. --}}
-                    <div class="mb-10 flex flex-col items-center gap-3 lg:hidden">
-                        <x-marca.logo class="size-16 rounded-2xl" icono="size-9" />
+                    <div class="mb-10 flex flex-col items-center gap-4 lg:hidden">
+                        <x-marca.logo class="h-28" />
                         <div class="text-center">
                             <div class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                                 Corte Superior de Justicia de Ucayali

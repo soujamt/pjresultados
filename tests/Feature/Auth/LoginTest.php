@@ -6,7 +6,10 @@ use Livewire\Livewire;
 it('muestra la pantalla de acceso a los visitantes', function () {
     $this->get(route('auth.login'))
         ->assertOk()
-        ->assertSee('Iniciar sesión');
+        ->assertSee('Iniciar sesión')
+        ->assertSee('img/pj-logo.png')
+        ->assertSee('img/pj-logo-oscuro.png')
+        ->assertSee('apple-touch-icon.png');
 });
 
 it('envia al inicio a quien ya inicio sesion', function () {

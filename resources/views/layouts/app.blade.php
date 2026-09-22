@@ -6,6 +6,8 @@
 
     <title>{{ $title ?? config('app.name') }}</title>
 
+    <x-marca.iconos />
+
     <link rel="preconnect" href="https://fonts.bunny.net" />
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600&display=swap" rel="stylesheet" />
 
@@ -22,9 +24,14 @@
 
     <flux:sidebar sticky collapsible class="border-r border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
         <flux:sidebar.header>
+            {{--
+                El contenedor del logo de Flux mide 24px y recorta lo que
+                sobra; las clases del slot lo agrandan y quitan el redondeo,
+                que se comeria las esquinas del isologo.
+            --}}
             <flux:sidebar.brand :href="route('inicio')" name="Resultados PJ">
-                <x-slot:logo class="size-8 min-w-8">
-                    <x-marca.logo class="size-8" icono="size-5" />
+                <x-slot:logo class="h-8 min-w-9 rounded-none">
+                    <x-marca.isologo class="h-8 w-auto" />
                 </x-slot:logo>
             </flux:sidebar.brand>
 
