@@ -3,13 +3,14 @@
 namespace App\Http\Controllers\Seleccion;
 
 use App\Enums\Permiso;
+use App\Exports\PostulantesLectoraExport;
 use App\Http\Controllers\Controller;
 use App\Models\Proceso;
 use App\Models\Puesto;
 use App\Models\Unidad;
-use App\Services\Seleccion\ExportadorInscripciones;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ExportarInscripcionesController extends Controller
@@ -19,7 +20,7 @@ class ExportarInscripcionesController extends Controller
      * nombres) para la lectora de fichas ópticas. Recibe los mismos filtros
      * que la pantalla de inscripciones.
      */
-    public function __invoke(Request $request, Proceso $proceso, ExportadorInscripciones $exportador): BinaryFileResponse
+    public function __invoke(Request $request, Proceso $proceso): BinaryFileResponse
     {
         Gate::authorize(Permiso::InscripcionesExportar->value);
 
@@ -34,12 +35,8 @@ class ExportarInscripcionesController extends Controller
             ? Puesto::query()->delProceso($proceso->id_pro)->findOrFail($request->integer('puesto'))
             : null;
 
-        $archivo = $exportador->paraLectora($proceso, $unidad, $puesto, $request->string('q')->trim()->value());
+        $export = new PostulantesLectoraExport($proceso, $unidad, $puesto, $request->string('q')->trim()->value());
 
-        return response()
-            ->download($archivo['ruta'], $archivo['nombre'], [
-                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            ])
-            ->deleteFileAfterSend();
+        return Excel::download($export, $export->nombreArchivo());
     }
 }

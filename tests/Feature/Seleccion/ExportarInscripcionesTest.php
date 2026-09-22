@@ -43,6 +43,30 @@ it('descarga el DNI y los apellidos y nombres para la lectora', function () {
     ]);
 });
 
+it('guarda todos los DNI como texto, empiecen o no en cero', function () {
+    $puesto = Puesto::factory()->create(['id_pro' => $this->proceso->id_pro]);
+    Inscripcion::factory()->create(['id_pue' => $puesto->id_pue, 'documento_ins' => '01234567']);
+    Inscripcion::factory()->create(['id_pue' => $puesto->id_pue, 'documento_ins' => '71234567']);
+
+    $respuesta = $this->actingAs($this->admin)
+        ->get(route('seleccion.inscripciones.excel', ['proceso' => '002-2026-UE-UCAYALI']));
+
+    $zip = new ZipArchive;
+    $zip->open($respuesta->baseResponse->getFile()->getPathname());
+    $hoja = (string) $zip->getFromName('xl/worksheets/sheet1.xml');
+    $zip->close();
+
+    /*
+     * Un valor escrito como numero aparece literal en la hoja («<v>71234567</v>»);
+     * uno escrito como texto vive en las cadenas compartidas.
+     */
+    preg_match_all('/<c r="A\d+"[^>]*>/', $hoja, $celdasDni);
+
+    expect($celdasDni[0])->toHaveCount(3)
+        ->each->toContain('t="s"')
+        ->and($hoja)->not->toContain('<v>71234567</v>');
+});
+
 it('exporta solo la unidad de organizacion filtrada', function () {
     $sala = Unidad::factory()->create(['nombre_uni' => 'SALA CIVIL - CALLERIA']);
     $deLaSala = Puesto::factory()->create(['id_pro' => $this->proceso->id_pro, 'id_uni' => $sala->id_uni]);
