@@ -5,6 +5,23 @@
     >
         <x-slot:acciones>
             @if ($proceso)
+                @can(App\Enums\Permiso::InscripcionesExportar->value)
+                    {{-- Descarga normal, sin wire:navigate: la respuesta es un archivo. Lleva los filtros activos. --}}
+                    <flux:tooltip content="DNI y apellidos y nombres, para la lectora de fichas ópticas">
+                        <flux:button
+                            :href="route('seleccion.inscripciones.excel', array_filter([
+                                'proceso' => $proceso->codigo_pro,
+                                'unidad' => $filtroUnidad,
+                                'puesto' => $filtroPuesto,
+                                'q' => trim($busqueda),
+                            ], fn ($valor) => $valor !== ''))"
+                            icon="arrow-down-tray"
+                        >
+                            Exportar Excel
+                        </flux:button>
+                    </flux:tooltip>
+                @endcan
+
                 @can(App\Enums\Permiso::InscripcionesImportar->value)
                     <flux:button wire:click="abrirImportacion" variant="primary" icon="arrow-up-tray">Importar desde Excel</flux:button>
                 @endcan

@@ -44,6 +44,7 @@ enum Permiso: string
 
     case InscripcionesVer = 'inscripciones.ver';
     case InscripcionesImportar = 'inscripciones.importar';
+    case InscripcionesExportar = 'inscripciones.exportar';
     case InscripcionesEliminar = 'inscripciones.eliminar';
 
     case ExamenesVer = 'examenes.ver';
@@ -79,6 +80,7 @@ enum Permiso: string
             self::PuestosImportar => 'Importar puestos desde Excel',
             self::InscripcionesVer => 'Ver inscripciones',
             self::InscripcionesImportar => 'Importar inscripciones desde Excel',
+            self::InscripcionesExportar => 'Exportar inscripciones a Excel',
             self::InscripcionesEliminar => 'Eliminar inscripciones',
             self::ExamenesVer => 'Ver exámenes',
             self::ExamenesImportar => 'Importar exámenes',

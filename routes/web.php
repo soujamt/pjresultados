@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\SalirController;
+use App\Http\Controllers\Seleccion\ExportarInscripcionesController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/inicio');
@@ -21,6 +22,7 @@ Route::middleware('auth')->group(function () {
         Route::livewire('/unidades', 'pages::seleccion.unidades')->name('unidades');
         Route::livewire('/puestos', 'pages::seleccion.puestos')->name('puestos');
         Route::livewire('/inscripciones', 'pages::seleccion.inscripciones')->name('inscripciones');
+        Route::get('/inscripciones/{proceso:codigo_pro}/excel', ExportarInscripcionesController::class)->name('inscripciones.excel');
     });
 
     Route::name('evaluacion.')->group(function (): void {
