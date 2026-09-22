@@ -15,14 +15,17 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /**
  * Puesto convocado dentro de un proceso. El codigo es el del cuadro de puestos
  * del Poder Judicial y puede llevar sufijo cuando un mismo cargo se convoca
- * para varias dependencias: `00340-1`, `00340-2`.
+ * para varias dependencias: `00340-1`, `00340-2`. Cada codigo corresponde a
+ * una sola unidad de organizacion.
  *
  * @property int $id_pue
  * @property int $id_pro
+ * @property ?int $id_uni
  * @property string $codigo_pue
  * @property string $nombre_pue
  * @property EstadoRegistro $estado_pue
  * @property-read Proceso $proceso
+ * @property-read ?Unidad $unidad
  */
 class Puesto extends Model
 {
@@ -35,6 +38,7 @@ class Puesto extends Model
 
     protected $fillable = [
         'id_pro',
+        'id_uni',
         'codigo_pue',
         'nombre_pue',
         'estado_pue',
@@ -59,6 +63,14 @@ class Puesto extends Model
     }
 
     /**
+     * @return BelongsTo<Unidad, $this>
+     */
+    public function unidad(): BelongsTo
+    {
+        return $this->belongsTo(Unidad::class, 'id_uni', 'id_uni')->withTrashed();
+    }
+
+    /**
      * @return HasMany<Inscripcion, $this>
      */
     public function inscripciones(): HasMany
@@ -72,6 +84,14 @@ class Puesto extends Model
     public function scopeDelProceso(Builder $consulta, int $idProceso): void
     {
         $consulta->where('id_pro', $idProceso);
+    }
+
+    /**
+     * @param  Builder<$this>  $consulta
+     */
+    public function scopeDeLaUnidad(Builder $consulta, int $idUnidad): void
+    {
+        $consulta->where('id_uni', $idUnidad);
     }
 
     /**

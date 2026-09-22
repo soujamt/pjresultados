@@ -4,6 +4,7 @@ use App\Enums\Permiso;
 use App\Models\Inscripcion;
 use App\Models\Proceso;
 use App\Models\Puesto;
+use App\Models\Unidad;
 use App\Services\Seleccion\ImportadorInscripciones;
 use App\Services\Seleccion\InscripcionService;
 use App\Services\Seleccion\ProcesoService;
@@ -23,6 +24,9 @@ class extends Component
     #[Url(as: 'proceso', except: '')]
     public string $codigoProceso = '';
 
+    #[Url(as: 'unidad', except: '')]
+    public string $filtroUnidad = '';
+
     #[Url(as: 'puesto', except: '')]
     public string $filtroPuesto = '';
 
@@ -33,7 +37,7 @@ class extends Component
     public ?TemporaryUploadedFile $archivo = null;
 
     /**
-     * @var ?array{filas: int, creados: int, actualizados: int, sin_cambios: int, errores: list<string>, aplicada: bool, mensaje: string}
+     * @var ?array{filas: int, creados: int, actualizados: int, sin_cambios: int, errores: list<string>, aplicada: bool, nota: ?string, mensaje: string}
      */
     public ?array $ultimaImportacion = null;
 
@@ -53,9 +57,20 @@ class extends Component
             $this->ultimaImportacion = null;
         }
 
-        if (in_array($propiedad, ['codigoProceso', 'filtroPuesto', 'busqueda'], true)) {
+        /* El puesto elegido puede no pertenecer a la nueva unidad. */
+        if ($propiedad === 'filtroUnidad') {
+            $this->filtroPuesto = '';
+        }
+
+        if (in_array($propiedad, ['codigoProceso', 'filtroUnidad', 'filtroPuesto', 'busqueda'], true)) {
             $this->resetPage();
         }
+    }
+
+    public function limpiarFiltros(): void
+    {
+        $this->reset('filtroUnidad', 'filtroPuesto', 'busqueda');
+        $this->resetPage();
     }
 
     public function proceso(): ?Proceso
@@ -135,15 +150,24 @@ class extends Component
     public function with(InscripcionService $servicio): array
     {
         $proceso = $this->proceso();
+        $unidad = $this->filtroUnidad === '' ? null : (int) $this->filtroUnidad;
 
         return [
             'proceso' => $proceso,
             'procesos' => Proceso::latest('id_pro')->get(['id_pro', 'codigo_pro']),
-            'puestos' => $proceso === null
-                ? collect()
-                : Puesto::query()->delProceso($proceso->id_pro)->orderBy('nombre_pue')->orderBy('codigo_pue')->get(),
+            'unidades' => $proceso === null ? collect() : Unidad::query()
+                ->whereHas('puestos', fn ($consulta) => $consulta->where('id_pro', $proceso->id_pro))
+                ->orderBy('nombre_uni')
+                ->get(['id_uni', 'nombre_uni']),
+            'puestos' => $proceso === null ? collect() : Puesto::query()
+                ->delProceso($proceso->id_pro)
+                ->when($unidad !== null, fn ($consulta) => $consulta->deLaUnidad($unidad))
+                ->orderBy('nombre_pue')
+                ->orderBy('codigo_pue')
+                ->get(),
             'inscripciones' => $servicio->consulta([
                 'proceso' => $proceso?->id_pro,
+                'unidad' => $unidad,
                 'puesto' => $this->filtroPuesto === '' ? null : (int) $this->filtroPuesto,
                 'busqueda' => $this->busqueda,
             ])->paginate(50),

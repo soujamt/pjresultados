@@ -10,6 +10,7 @@ final readonly class ResultadoImportacion
 {
     /**
      * @param  list<string>  $errores
+     * @param  ?string  $nota  lo que se hizo de paso, como actualizar los puestos
      */
     public function __construct(
         public int $filas,
@@ -18,6 +19,7 @@ final readonly class ResultadoImportacion
         public int $sinCambios = 0,
         public array $errores = [],
         public bool $aplicada = false,
+        public ?string $nota = null,
     ) {}
 
     /**
@@ -41,12 +43,14 @@ final readonly class ResultadoImportacion
                 : 'No se cargó nada: el archivo tiene '.count($this->errores).' observación(es). Corrígelas y vuelve a subirlo.';
         }
 
-        return "Se leyeron {$this->filas} fila(s): {$this->creados} {$registros} nuevo(s), "
+        $mensaje = "Se leyeron {$this->filas} fila(s): {$this->creados} {$registros} nuevo(s), "
             ."{$this->actualizados} actualizado(s) y {$this->sinCambios} sin cambios.";
+
+        return $this->nota === null ? $mensaje : "{$mensaje} {$this->nota}";
     }
 
     /**
-     * @return array{filas: int, creados: int, actualizados: int, sin_cambios: int, errores: list<string>, aplicada: bool}
+     * @return array{filas: int, creados: int, actualizados: int, sin_cambios: int, errores: list<string>, aplicada: bool, nota: ?string}
      */
     public function toArray(): array
     {
@@ -57,6 +61,7 @@ final readonly class ResultadoImportacion
             'sin_cambios' => $this->sinCambios,
             'errores' => $this->errores,
             'aplicada' => $this->aplicada,
+            'nota' => $this->nota,
         ];
     }
 }

@@ -21,8 +21,20 @@
             </flux:select>
         </div>
 
-        {{-- La lista cambia con el proceso: el wire:key evita que el navegador conserve una opción que ya no existe. --}}
-        <div class="w-full sm:w-96" wire:key="puestos-{{ $proceso?->id_pro }}">
+        {{--
+            Las listas cambian con el proceso y la unidad: el wire:key evita que
+            el navegador conserve una opción que ya no existe.
+        --}}
+        <div class="w-full sm:w-80" wire:key="unidades-{{ $proceso?->id_pro }}">
+            <flux:select wire:model.live="filtroUnidad" label="Unidad de organización">
+                <flux:select.option value="">Todas las unidades</flux:select.option>
+                @foreach ($unidades as $unidad)
+                    <flux:select.option :value="$unidad->id_uni">{{ $unidad->nombre_uni }}</flux:select.option>
+                @endforeach
+            </flux:select>
+        </div>
+
+        <div class="w-full sm:w-80" wire:key="puestos-{{ $proceso?->id_pro }}-{{ $filtroUnidad }}">
             <flux:select wire:model.live="filtroPuesto" label="Puesto">
                 <flux:select.option value="">Todos los puestos</flux:select.option>
                 @foreach ($puestos as $puesto)
@@ -31,10 +43,18 @@
             </flux:select>
         </div>
 
-        <div class="w-full sm:w-72">
+        <div class="w-full sm:w-64">
             <flux:input wire:model.live.debounce.300ms="busqueda" icon="magnifying-glass" placeholder="Buscar por DNI o nombre" clearable />
         </div>
+
+        @if ($filtroUnidad !== '' || $filtroPuesto !== '' || $busqueda !== '')
+            <flux:button wire:click="limpiarFiltros" variant="ghost" icon="x-mark">Limpiar</flux:button>
+        @endif
     </div>
+
+    @if ($proceso && $inscripciones->total() > 0)
+        <flux:text class="-mt-3 text-xs">{{ $inscripciones->total() }} inscrito(s) con los filtros actuales</flux:text>
+    @endif
 
     @if ($ultimaImportacion && $ultimaImportacion['errores'] !== [])
         <flux:callout icon="exclamation-triangle" variant="danger">
@@ -63,7 +83,7 @@
                 <flux:table.column class="w-16">N°</flux:table.column>
                 <flux:table.column>DNI</flux:table.column>
                 <flux:table.column>Apellidos y nombres</flux:table.column>
-                <flux:table.column>Puesto</flux:table.column>
+                <flux:table.column>Puesto y unidad de organización</flux:table.column>
                 @can(App\Enums\Permiso::InscripcionesEliminar->value)
                     <flux:table.column align="end">Acciones</flux:table.column>
                 @endcan
@@ -76,8 +96,13 @@
                         <flux:table.cell class="font-mono text-sm">{{ $inscripcion->documento_ins }}</flux:table.cell>
                         <flux:table.cell class="text-sm font-medium text-zinc-800 dark:text-zinc-200">{{ $inscripcion->apellidos_nombres_ins }}</flux:table.cell>
                         <flux:table.cell class="text-sm whitespace-normal">
-                            <span class="font-mono text-xs text-zinc-500">{{ $inscripcion->puesto->codigo_pue }}</span>
-                            {{ $inscripcion->puesto->nombre_pue }}
+                            <div>
+                                <span class="font-mono text-xs text-zinc-500">{{ $inscripcion->puesto->codigo_pue }}</span>
+                                {{ $inscripcion->puesto->nombre_pue }}
+                            </div>
+                            @if ($inscripcion->puesto->unidad)
+                                <div class="text-xs text-zinc-500">{{ $inscripcion->puesto->unidad->nombre_uni }}</div>
+                            @endif
                         </flux:table.cell>
                         @can(App\Enums\Permiso::InscripcionesEliminar->value)
                             <flux:table.cell align="end">
@@ -93,12 +118,12 @@
                 @empty
                     <x-tabla.vacia
                         :columnas="5"
-                        :mensaje="$busqueda === '' && $filtroPuesto === ''
+                        :mensaje="$busqueda === '' && $filtroPuesto === '' && $filtroUnidad === ''
                             ? 'Todavía no hay postulantes inscritos en este proceso.'
                             : 'Ninguna inscripción coincide con los filtros.'"
                         icono="clipboard-document-list"
                     >
-                        @if ($busqueda === '' && $filtroPuesto === '')
+                        @if ($busqueda === '' && $filtroPuesto === '' && $filtroUnidad === '')
                             <span class="max-w-md text-xs">
                                 Importa el listado del Anexo 06-A agregándole una columna «DNI»: sin el documento no se
                                 podrá cruzar a cada postulante con su hoja de examen.
@@ -138,9 +163,13 @@
             <div class="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-xs leading-relaxed text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
                 <p class="font-medium text-zinc-700 dark:text-zinc-300">Columnas que se leen</p>
                 <p class="mt-1">
-                    «Nº» (opcional), <strong>«DNI»</strong>, «APELLIDOS Y NOMBRES» y «CÓDIGO DE PUESTO». Los puestos
-                    deben estar cargados antes. Si hay una sola observación no se guarda nada; volver a subir el
-                    archivo actualiza a los postulantes por su DNI.
+                    «Nº» (opcional), <strong>«DNI»</strong>, «APELLIDOS Y NOMBRES» y «CÓDIGO DE PUESTO». Si además trae
+                    «PUESTO» y «UNIDAD DE ORGANIZACIÓN», en la misma carga se crean los puestos que falten y se les
+                    registra su unidad.
+                </p>
+                <p class="mt-2">
+                    Si hay una sola observación no se guarda nada; volver a subir el archivo actualiza a los
+                    postulantes por su DNI.
                 </p>
             </div>
 

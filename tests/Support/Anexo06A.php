@@ -64,4 +64,26 @@ class Anexo06A
     {
         return [(string) $numero, $dni, $nombres, $codigo, "{$puesto} ({$codigo})"];
     }
+
+    /**
+     * Cabecera del listado completo que entrega la Corte («DATA GENERAL»):
+     * empieza en la columna B y trae DNI, unidad de organizacion y aula.
+     *
+     * @return list<string>
+     */
+    public static function cabeceraCompleta(): array
+    {
+        return [
+            '', 'Nº', "DOCUMENTO NACIONAL DE IDENTIDAD\n(DNI)", 'APELLIDOS Y NOMBRES', 'CÓDIGO DE PUESTO',
+            "PUESTO\n(agrupado por puesto)", 'UNIDAD DE ORGANIZACIÓN', 'PABELLÓN', 'PISO', 'AULA', 'FIRMA',
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function filaCompleta(int $numero, string $dni, string $nombres, string $codigo, string $puesto, string $unidad): array
+    {
+        return ['', (string) $numero, $dni, $nombres, $codigo, "{$puesto} ({$codigo})", $unidad];
+    }
 }

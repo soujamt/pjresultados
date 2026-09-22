@@ -7,6 +7,7 @@ use App\Livewire\Forms\PuestoForm;
 use App\Models\Importacion;
 use App\Models\Proceso;
 use App\Models\Puesto;
+use App\Models\Unidad;
 use App\Services\Seleccion\ImportadorPuestos;
 use App\Services\Seleccion\ProcesoService;
 use App\Services\Seleccion\PuestoService;
@@ -25,6 +26,9 @@ class extends Component
     #[Url(as: 'proceso', except: '')]
     public string $codigoProceso = '';
 
+    #[Url(as: 'unidad', except: '')]
+    public string $filtroUnidad = '';
+
     #[Url(as: 'q', except: '')]
     public string $busqueda = '';
 
@@ -37,7 +41,7 @@ class extends Component
      * Resumen de la ultima carga, para listar las observaciones tras cerrar
      * el modal.
      *
-     * @var ?array{filas: int, creados: int, actualizados: int, sin_cambios: int, errores: list<string>, aplicada: bool, mensaje: string}
+     * @var ?array{filas: int, creados: int, actualizados: int, sin_cambios: int, errores: list<string>, aplicada: bool, nota: ?string, mensaje: string}
      */
     public ?array $ultimaImportacion = null;
 
@@ -55,6 +59,11 @@ class extends Component
         $this->ultimaImportacion = null;
     }
 
+    public function limpiarFiltros(): void
+    {
+        $this->reset('filtroUnidad', 'busqueda');
+    }
+
     public function proceso(): ?Proceso
     {
         return $this->codigoProceso === ''
@@ -68,6 +77,7 @@ class extends Component
 
         $this->form->reset();
         $this->form->proceso = $this->proceso()?->id_pro;
+        $this->form->unidad = $this->filtroUnidad === '' ? null : (int) $this->filtroUnidad;
         $this->resetValidation();
 
         Flux::modal('puesto')->show();
@@ -187,22 +197,36 @@ class extends Component
         $proceso = $this->proceso();
         $busqueda = trim($this->busqueda);
 
+        $puestos = $proceso === null ? collect() : Puesto::query()
+            ->delProceso($proceso->id_pro)
+            ->with('unidad')
+            ->withCount('inscripciones')
+            ->when($this->filtroUnidad !== '', fn ($consulta) => $consulta->deLaUnidad((int) $this->filtroUnidad))
+            ->when($busqueda !== '', fn ($consulta) => $consulta->where(function ($consulta) use ($busqueda): void {
+                $consulta->where('codigo_pue', 'like', "%{$busqueda}%")
+                    ->orWhere('nombre_pue', 'like', '%'.mb_strtoupper($busqueda).'%');
+            }))
+            ->get();
+
+        /*
+         * Agrupados por unidad de organizacion, con los puestos sin unidad al
+         * final. Una sola clave concatenada: sortBy con varias closures las
+         * trata como comparadores y no ordena.
+         */
+        $porUnidad = $puestos
+            ->sortBy(fn (Puesto $puesto): string => ($puesto->unidad === null ? '1' : '0'.$puesto->unidad->nombre_uni)
+                .'|'.$puesto->nombre_pue.'|'.$puesto->codigo_pue)
+            ->groupBy(fn (Puesto $puesto): string => $puesto->unidad->nombre_uni ?? '');
+
         return [
             'proceso' => $proceso,
             'procesos' => Proceso::latest('id_pro')->get(['id_pro', 'codigo_pro']),
-            'puestos' => $proceso === null ? collect() : Puesto::query()
-                ->delProceso($proceso->id_pro)
-                ->withCount('inscripciones')
-                ->when($busqueda !== '', fn ($consulta) => $consulta->where(function ($consulta) use ($busqueda): void {
-                    $consulta->where('codigo_pue', 'like', "%{$busqueda}%")
-                        ->orWhere('nombre_pue', 'like', '%'.mb_strtoupper($busqueda).'%');
-                }))
-                ->orderBy('nombre_pue')
-                ->orderBy('codigo_pue')
-                ->get(),
+            'unidades' => Unidad::query()->orderBy('nombre_uni')->get(['id_uni', 'nombre_uni', 'estado_uni']),
+            'puestos' => $puestos,
+            'porUnidad' => $porUnidad,
             'ultimaCarga' => $proceso === null ? null : Importacion::query()
                 ->where('id_pro', $proceso->id_pro)
-                ->where('tipo_imp', TipoImportacion::Puestos)
+                ->whereIn('tipo_imp', [TipoImportacion::Puestos, TipoImportacion::Inscripciones])
                 ->where('aplicada_imp', true)
                 ->with('usuario')
                 ->latest('id_imp')

@@ -47,6 +47,7 @@
 
             @if ($accesos->puedeAlguno($usuario, [
                 App\Enums\Permiso::ProcesosVer,
+                App\Enums\Permiso::UnidadesVer,
                 App\Enums\Permiso::PuestosVer,
                 App\Enums\Permiso::InscripcionesVer,
             ]))
@@ -54,6 +55,12 @@
                     @can(App\Enums\Permiso::ProcesosVer->value)
                         <flux:sidebar.item icon="calendar-days" :href="route('seleccion.procesos')" :current="request()->routeIs('seleccion.procesos')" wire:navigate>
                             Procesos
+                        </flux:sidebar.item>
+                    @endcan
+
+                    @can(App\Enums\Permiso::UnidadesVer->value)
+                        <flux:sidebar.item icon="building-office-2" :href="route('seleccion.unidades')" :current="request()->routeIs('seleccion.unidades')" wire:navigate>
+                            Unidades
                         </flux:sidebar.item>
                     @endcan
 

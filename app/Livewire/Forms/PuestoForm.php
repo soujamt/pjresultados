@@ -14,6 +14,8 @@ class PuestoForm extends Form
 
     public ?int $proceso = null;
 
+    public ?int $unidad = null;
+
     public string $codigo = '';
 
     public string $nombre = '';
@@ -35,6 +37,7 @@ class PuestoForm extends Form
                     ->whereNull('deleted_at'),
             ],
             'nombre' => ['required', 'string', 'max:150'],
+            'unidad' => ['nullable', 'integer', Rule::exists('tbl_unidad', 'id_uni')->whereNull('deleted_at')],
             'estado' => ['required', Rule::enum(EstadoRegistro::class)],
         ];
     }
@@ -48,6 +51,7 @@ class PuestoForm extends Form
             'proceso' => 'proceso',
             'codigo' => 'código',
             'nombre' => 'nombre del puesto',
+            'unidad' => 'unidad de organización',
             'estado' => 'estado',
         ];
     }
@@ -76,6 +80,7 @@ class PuestoForm extends Form
     {
         $this->id = $puesto->id_pue;
         $this->proceso = $puesto->id_pro;
+        $this->unidad = $puesto->id_uni;
         $this->codigo = $puesto->codigo_pue;
         $this->nombre = $puesto->nombre_pue;
         $this->estado = $puesto->estado_pue->value;
@@ -88,6 +93,7 @@ class PuestoForm extends Form
     {
         return [
             'id_pro' => (int) $this->proceso,
+            'id_uni' => $this->unidad,
             'codigo_pue' => $this->codigo,
             'nombre_pue' => mb_strtoupper(trim((string) preg_replace('/\s+/u', ' ', $this->nombre))),
             'estado_pue' => EstadoRegistro::from($this->estado),

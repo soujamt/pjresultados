@@ -3,6 +3,7 @@
 use App\Models\Inscripcion;
 use App\Models\Proceso;
 use App\Models\Puesto;
+use App\Models\Unidad;
 use App\Services\Seleccion\ImportadorInscripciones;
 use Tests\Support\Anexo06A;
 
@@ -59,7 +60,7 @@ it('no guarda nada si alguna fila tiene observaciones', function () {
     $archivo = Anexo06A::archivo([
         Anexo06A::filaConDni(1, '71234567', 'GARCIA DAVILA LAURA', '00340-1'),
         Anexo06A::filaConDni(2, '71234567', 'SERRANO CASTILLO DORIS', '00340-1'),
-        Anexo06A::filaConDni(3, '72345678', 'ALIAGA SILVA MILTON', '99999'),
+        Anexo06A::filaConDni(3, '72345678', 'ALIAGA SILVA MILTON', '00340-1', 'REVISOR'),
         Anexo06A::filaConDni(4, '12AB', 'REVILLA PAREDES JUAN', '00340-1'),
     ], Anexo06A::cabeceraConDni());
 
@@ -68,9 +69,39 @@ it('no guarda nada si alguna fila tiene observaciones', function () {
     expect($resultado->aplicada)->toBeFalse()
         ->and($resultado->errores)->toHaveCount(3)
         ->and($resultado->errores[0])->toContain('Fila 14')->toContain('fila 13')
-        ->and($resultado->errores[1])->toContain('99999')
+        ->and($resultado->errores[1])->toContain('Fila 15')->toContain('REVISOR')
         ->and($resultado->errores[2])->toContain('12AB')
         ->and(Inscripcion::count())->toBe(0);
+});
+
+it('rechaza un puesto que no existe si el archivo no trae su nombre', function () {
+    $archivo = Anexo06A::archivo([
+        ['1', '71234567', 'GARCIA DAVILA LAURA', '99999'],
+    ], ['Nº', 'DNI', 'APELLIDOS Y NOMBRES', 'CÓDIGO DE PUESTO']);
+
+    $resultado = app(ImportadorInscripciones::class)->importar($this->proceso, $archivo);
+
+    expect($resultado->aplicada)->toBeFalse()
+        ->and($resultado->errores[0])->toContain('el puesto 99999 no está registrado');
+});
+
+it('carga el listado completo con DNI y unidad en una sola importacion', function () {
+    $archivo = Anexo06A::archivo([
+        Anexo06A::filaCompleta(1, '71234567', 'GARCIA DAVILA LAURA', '00340-1', 'ASISTENTE JUDICIAL', 'PRIMER JUZGADO DE TRABAJO - CALLERIA'),
+        Anexo06A::filaCompleta(2, '72345678', 'ALIAGA SILVA MILTON', '00413', 'ASISTENTE EN SERVICIOS DE COMUNICACIONES', 'MÓDULO PENAL DE CONTAMANA'),
+        Anexo06A::filaCompleta(3, '73456789', 'SERRANO CASTILLO DORIS', '00413', 'ASISTENTE EN SERVICIOS DE COMUNICACIONES', 'MÓDULO PENAL DE CONTAMANA'),
+    ], Anexo06A::cabeceraCompleta());
+
+    $resultado = app(ImportadorInscripciones::class)->importar($this->proceso, $archivo);
+
+    $contamana = Unidad::where('nombre_uni', 'MÓDULO PENAL DE CONTAMANA')->sole();
+
+    expect($resultado->aplicada)->toBeTrue()
+        ->and($resultado->creados)->toBe(3)
+        ->and($resultado->mensaje('inscrito(s)'))->toContain('Puestos: 1 nuevo(s) y 1 actualizado(s)')
+        ->and($this->puesto->fresh()->unidad->nombre_uni)->toBe('PRIMER JUZGADO DE TRABAJO - CALLERIA')
+        ->and($contamana->puestos()->sole()->codigo_pue)->toBe('00413')
+        ->and($contamana->inscripciones()->count())->toBe(2);
 });
 
 it('no inscribe en un puesto deshabilitado', function () {
@@ -84,8 +115,8 @@ it('no inscribe en un puesto deshabilitado', function () {
         ->and($resultado->errores[0])->toContain('deshabilitado');
 });
 
-it('pide cargar los puestos antes que las inscripciones', function () {
+it('pide cargar los puestos si el archivo no trae sus nombres', function () {
     app(ImportadorInscripciones::class)->importar(Proceso::factory()->create(), Anexo06A::archivo([
-        Anexo06A::filaConDni(1, '71234567', 'GARCIA DAVILA LAURA', '00340-1'),
-    ], Anexo06A::cabeceraConDni()));
+        ['1', '71234567', 'GARCIA DAVILA LAURA', '00340-1'],
+    ], ['Nº', 'DNI', 'APELLIDOS Y NOMBRES', 'CÓDIGO DE PUESTO']));
 })->throws(RuntimeException::class, 'no tiene puestos');

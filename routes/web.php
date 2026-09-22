@@ -18,6 +18,7 @@ Route::middleware('auth')->group(function () {
 
     Route::name('seleccion.')->group(function (): void {
         Route::livewire('/procesos', 'pages::seleccion.procesos')->name('procesos');
+        Route::livewire('/unidades', 'pages::seleccion.unidades')->name('unidades');
         Route::livewire('/puestos', 'pages::seleccion.puestos')->name('puestos');
         Route::livewire('/inscripciones', 'pages::seleccion.inscripciones')->name('inscripciones');
     });

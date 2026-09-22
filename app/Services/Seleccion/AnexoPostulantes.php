@@ -2,6 +2,7 @@
 
 namespace App\Services\Seleccion;
 
+use App\Models\Unidad;
 use App\Services\Excel\LectorXlsx;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -28,6 +29,8 @@ class AnexoPostulantes
     public const CODIGO_PUESTO = 'codigo_puesto';
 
     public const PUESTO = 'puesto';
+
+    public const UNIDAD = 'unidad';
 
     /**
      * Filas en las que se busca la cabecera antes de rendirse.
@@ -118,6 +121,19 @@ class AnexoPostulantes
     }
 
     /**
+     * Unidad de organizacion de una fila, o null si el archivo no trae la
+     * columna o la celda esta vacia: en ambos casos no hay nada que registrar.
+     *
+     * @param  array<string, string>  $valores
+     */
+    public static function unidadDe(array $valores): ?string
+    {
+        $unidad = Unidad::normalizarNombre($valores[self::UNIDAD] ?? '');
+
+        return $unidad === '' ? null : $unidad;
+    }
+
+    /**
      * Codigo del puesto tal como se guarda. Excel convierte en numero una
      * celda como «00312» si no esta formateada como texto y se come los ceros
      * de la izquierda; se recuperan rellenando a los cinco digitos del cuadro
@@ -196,6 +212,7 @@ class AnexoPostulantes
             in_array($normalizado, ['PUESTO', 'NOMBRE DEL PUESTO', 'DENOMINACION DEL PUESTO', 'CARGO'], true) => self::PUESTO,
             in_array($normalizado, ['APELLIDOS Y NOMBRES', 'APELLIDOS Y NOMBRE', 'NOMBRES Y APELLIDOS', 'POSTULANTE'], true) => self::NOMBRES,
             in_array($normalizado, ['N', 'NO', 'NRO', 'NUM', 'NUMERO', 'ITEM'], true) => self::NUMERO,
+            in_array($normalizado, ['UNIDAD DE ORGANIZACION', 'UNIDAD ORGANICA', 'UNIDAD', 'DEPENDENCIA', 'ORGANO JURISDICCIONAL'], true) => self::UNIDAD,
             preg_match('/\bDNI\b/', $normalizado) === 1, str_contains($normalizado, 'DOCUMENTO') => self::DOCUMENTO,
             default => null,
         };

@@ -31,6 +31,11 @@ enum Permiso: string
     case ProcesosEditar = 'procesos.editar';
     case ProcesosEliminar = 'procesos.eliminar';
 
+    case UnidadesVer = 'unidades.ver';
+    case UnidadesCrear = 'unidades.crear';
+    case UnidadesEditar = 'unidades.editar';
+    case UnidadesEliminar = 'unidades.eliminar';
+
     case PuestosVer = 'puestos.ver';
     case PuestosCrear = 'puestos.crear';
     case PuestosEditar = 'puestos.editar';
@@ -63,6 +68,10 @@ enum Permiso: string
             self::ProcesosCrear => 'Crear procesos de selección',
             self::ProcesosEditar => 'Editar procesos de selección',
             self::ProcesosEliminar => 'Eliminar procesos de selección',
+            self::UnidadesVer => 'Ver unidades de organización',
+            self::UnidadesCrear => 'Crear unidades de organización',
+            self::UnidadesEditar => 'Editar unidades de organización',
+            self::UnidadesEliminar => 'Eliminar unidades de organización',
             self::PuestosVer => 'Ver puestos',
             self::PuestosCrear => 'Crear puestos',
             self::PuestosEditar => 'Editar puestos',
@@ -97,6 +106,7 @@ enum Permiso: string
             'usuarios' => 'Usuarios',
             'roles' => 'Roles y permisos',
             'procesos' => 'Procesos de selección',
+            'unidades' => 'Unidades de organización',
             'puestos' => 'Puestos',
             'inscripciones' => 'Inscripciones',
             'examenes' => 'Exámenes',

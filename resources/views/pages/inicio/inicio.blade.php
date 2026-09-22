@@ -33,6 +33,9 @@
                 <div class="rounded-lg bg-zinc-50 p-4 dark:bg-zinc-900">
                     <div class="text-xs font-medium tracking-wide text-zinc-500 uppercase">Puestos</div>
                     <div class="mt-1 text-2xl font-semibold tabular-nums">{{ $puestos }}</div>
+                    @if ($unidades > 0)
+                        <div class="text-xs text-zinc-500">en {{ $unidades }} unidad(es) de organización</div>
+                    @endif
                 </div>
 
                 <div class="rounded-lg bg-zinc-50 p-4 dark:bg-zinc-900">

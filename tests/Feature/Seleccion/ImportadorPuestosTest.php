@@ -4,6 +4,7 @@ use App\Enums\TipoImportacion;
 use App\Models\Importacion;
 use App\Models\Proceso;
 use App\Models\Puesto;
+use App\Models\Unidad;
 use App\Models\Usuario;
 use App\Services\Seleccion\ImportadorPuestos;
 use Tests\Support\Anexo06A;
@@ -90,6 +91,65 @@ it('rechaza el archivo entero si un codigo aparece con dos nombres', function ()
         ->and($resultado->errores)->toHaveCount(1)
         ->and($resultado->errores[0])->toContain('Fila 15')->toContain('00312')
         ->and(Puesto::count())->toBe(0);
+});
+
+it('registra la unidad de organizacion de cada puesto', function () {
+    $proceso = Proceso::factory()->create();
+
+    $resultado = app(ImportadorPuestos::class)->importar($proceso, Anexo06A::archivo([
+        Anexo06A::filaCompleta(1, '71234567', 'GARCIA DAVILA LAURA', '00340-1', 'ASISTENTE JUDICIAL', 'PRIMER JUZGADO DE TRABAJO - CALLERIA'),
+        Anexo06A::filaCompleta(2, '72345678', 'ALIAGA SILVA MILTON', '00347-1', 'TECNICO JUDICIAL', 'PRIMER JUZGADO DE TRABAJO - CALLERIA'),
+        Anexo06A::filaCompleta(3, '73456789', 'SERRANO CASTILLO DORIS', '00335-2', 'ASISTENTE EN SERVICIOS ADMINISTRATIVOS', 'MÓDULO PENAL CENTRAL'),
+    ], Anexo06A::cabeceraCompleta()));
+
+    expect($resultado->aplicada)->toBeTrue()
+        ->and(Unidad::orderBy('nombre_uni')->pluck('nombre_uni')->all())->toBe(['MÓDULO PENAL CENTRAL', 'PRIMER JUZGADO DE TRABAJO - CALLERIA'])
+        ->and(Puesto::with('unidad')->orderBy('codigo_pue')->get()->mapWithKeys(fn (Puesto $puesto) => [$puesto->codigo_pue => $puesto->unidad->nombre_uni])->all())
+        ->toBe([
+            '00335-2' => 'MÓDULO PENAL CENTRAL',
+            '00340-1' => 'PRIMER JUZGADO DE TRABAJO - CALLERIA',
+            '00347-1' => 'PRIMER JUZGADO DE TRABAJO - CALLERIA',
+        ]);
+});
+
+it('reconoce una unidad ya registrada aunque venga sin tildes', function () {
+    $proceso = Proceso::factory()->create();
+    $unidad = Unidad::factory()->create(['nombre_uni' => 'MÓDULO PENAL CENTRAL']);
+
+    app(ImportadorPuestos::class)->importar($proceso, Anexo06A::archivo([
+        Anexo06A::filaCompleta(1, '71234567', 'GARCIA DAVILA LAURA', '00335-2', 'ASISTENTE EN SERVICIOS ADMINISTRATIVOS', 'modulo  penal central'),
+    ], Anexo06A::cabeceraCompleta()));
+
+    expect(Unidad::count())->toBe(1)
+        ->and(Puesto::sole()->id_uni)->toBe($unidad->id_uni);
+});
+
+it('rechaza un codigo que aparece en dos unidades', function () {
+    $proceso = Proceso::factory()->create();
+
+    $resultado = app(ImportadorPuestos::class)->importar($proceso, Anexo06A::archivo([
+        Anexo06A::filaCompleta(1, '71234567', 'GARCIA DAVILA LAURA', '00340-1', 'ASISTENTE JUDICIAL', 'SALA CIVIL - CALLERIA'),
+        Anexo06A::filaCompleta(2, '72345678', 'ALIAGA SILVA MILTON', '00340-1', 'ASISTENTE JUDICIAL', 'MÓDULO PENAL CENTRAL'),
+    ], Anexo06A::cabeceraCompleta()));
+
+    expect($resultado->aplicada)->toBeFalse()
+        ->and($resultado->errores)->toHaveCount(1)
+        ->and($resultado->errores[0])->toContain('Fila 14')->toContain('SALA CIVIL - CALLERIA')
+        ->and(Puesto::count())->toBe(0)
+        ->and(Unidad::count())->toBe(0);
+});
+
+it('no borra la unidad de un puesto cuando el archivo no trae esa columna', function () {
+    $proceso = Proceso::factory()->create();
+    $unidad = Unidad::factory()->create();
+    Puesto::factory()->create(['id_pro' => $proceso->id_pro, 'id_uni' => $unidad->id_uni, 'codigo_pue' => '00312', 'nombre_pue' => 'ANALISTA II']);
+
+    $resultado = app(ImportadorPuestos::class)->importar($proceso, Anexo06A::archivo([
+        Anexo06A::fila(1, 'GARCIA DAVILA LAURA', '00312', 'ANALISTA II'),
+    ]));
+
+    expect($resultado->sinCambios)->toBe(1)
+        ->and(Puesto::sole()->id_uni)->toBe($unidad->id_uni);
 });
 
 it('registra cada carga en la bitacora con su usuario', function () {
