@@ -1,0 +1,105 @@
+@import 'tailwindcss';
+@import '../../vendor/livewire/flux/dist/flux.css';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@source '../views';
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+
+@theme {
+    --font-sans:
+        Inter, 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+
+    --color-zinc-50: var(--color-neutral-50);
+    --color-zinc-100: var(--color-neutral-100);
+    --color-zinc-200: var(--color-neutral-200);
+    --color-zinc-300: var(--color-neutral-300);
+    --color-zinc-400: var(--color-neutral-400);
+    --color-zinc-500: var(--color-neutral-500);
+    --color-zinc-600: var(--color-neutral-600);
+    --color-zinc-700: var(--color-neutral-700);
+    --color-zinc-800: var(--color-neutral-800);
+    --color-zinc-900: var(--color-neutral-900);
+    --color-zinc-950: var(--color-neutral-950);
+
+    --color-accent: var(--color-pj-700);
+    --color-accent-content: var(--color-pj-700);
+    --color-accent-foreground: var(--color-white);
+
+    /** Identidad institucional del Poder Judicial: el rojo guinda de su
+     ** escudo, con la luminosidad ajustada para usarlo como color de interfaz. **/
+    --color-pj-50: oklch(0.971 0.013 17);
+    --color-pj-100: oklch(0.936 0.032 17);
+    --color-pj-200: oklch(0.885 0.062 18);
+    --color-pj-300: oklch(0.808 0.114 19);
+    --color-pj-400: oklch(0.704 0.171 22);
+    --color-pj-500: oklch(0.62 0.2 25);
+    --color-pj-600: oklch(0.53 0.19 25);
+    --color-pj-700: oklch(0.46 0.165 24);
+    --color-pj-800: oklch(0.39 0.135 23);
+    --color-pj-900: oklch(0.32 0.105 22);
+    --color-pj-950: oklch(0.22 0.07 22);
+}
+
+/*
+ * Fondo de los modales y flyouts de Flux. Sin esto usan el ::backdrop por
+ * defecto del navegador, que es un gris translúcido apenas perceptible.
+ */
+ui-modal dialog::backdrop {
+    background-color: rgb(0 0 0 / 0.5);
+    backdrop-filter: blur(4px);
+}
+
+/*
+ * Foco de los campos: se tiñe el borde, sin anillo ni contorno. Los campos con
+ * error conservan el borde rojo: el foco no debe tapar que hay algo que corregir.
+ */
+[data-flux-control]:focus:not([data-invalid]),
+[data-select-trigger]:focus:not([data-invalid]) {
+    outline: none;
+    border-color: var(--color-accent);
+}
+
+/*
+ * Los campos de Flux son rejillas: cuando uno muestra su error la fila crece y
+ * el vecino se desalinea. Anclando el contenido arriba se quedan donde están.
+ */
+ui-field {
+    align-content: start;
+}
+
+@layer theme {
+    .dark {
+        --color-accent: var(--color-pj-500);
+        --color-accent-content: var(--color-pj-400);
+        --color-accent-foreground: var(--color-white);
+    }
+}
+
+@layer base {
+    *,
+    ::after,
+    ::before,
+    ::backdrop,
+    ::file-selector-button {
+        border-color: var(--color-zinc-200, currentColor);
+    }
+
+    button,
+    [role='button'] {
+        cursor: pointer;
+    }
+}
+
+[data-flux-field]:not(ui-radio, ui-checkbox) {
+    @apply grid gap-2;
+}
+
+[data-flux-label] {
+    @apply mb-0! leading-tight!;
+}
+
+[x-cloak] {
+    display: none !important;
+}
