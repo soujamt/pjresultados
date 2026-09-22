@@ -1,0 +1,38 @@
+@blaze(fold: true)
+
+{{-- Hugeicons Free 4.3.5 · «view-off-slash» · MIT, Copyright (c) 2025 Hugeicons · generado con `php artisan pj:iconos` --}}
+
+@props([
+    'variant' => 'outline',
+])
+
+@php
+$classes = Flux::classes('shrink-0')
+    ->add(match ($variant) {
+        'mini' => '[:where(&)]:size-5',
+        'micro' => '[:where(&)]:size-4',
+        default => '[:where(&)]:size-6',
+    });
+
+$strokeWidth = match ($variant) {
+    'solid', 'micro' => 2,
+    'mini' => 1.75,
+    default => 1.5,
+};
+@endphp
+
+<svg
+    {{ $attributes->class($classes) }}
+    data-flux-icon
+    data-hugeicon
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke-width="{{ $strokeWidth }}"
+    aria-hidden="true"
+    data-slot="icon"
+>
+    <path d="M19.439 15.439C20.3636 14.5212 21.0775 13.6091 21.544 12.955C21.848 12.5287 22 12.3155 22 12C22 11.6845 21.848 11.4713 21.544 11.045C20.1779 9.12944 16.6892 5 12 5C11.0922 5 10.2294 5.15476 9.41827 5.41827M6.74742 6.74742C4.73118 8.1072 3.24215 9.94266 2.45604 11.045C2.15201 11.4713 2 11.6845 2 12C2 12.3155 2.15201 12.5287 2.45604 12.955C3.8221 14.8706 7.31078 19 12 19C13.9908 19 15.7651 18.2557 17.2526 17.2526" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M9.85786 10C9.32783 10.53 9 11.2623 9 12.0711C9 13.6887 10.3113 15 11.9289 15C12.7377 15 13.47 14.6722 14 14.1421" stroke="currentColor" stroke-linecap="round" />
+    <path d="M3 3L21 21" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
+</svg>
