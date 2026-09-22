@@ -1,0 +1,44 @@
+<div class="space-y-6">
+    <x-pagina.encabezado
+        titulo="Exámenes"
+        bajada="Carga de las hojas de respuestas de la evaluación técnica, leídas por la lectora óptica."
+    >
+        <x-slot:acciones>
+            @can(App\Enums\Permiso::ExamenesImportar->value)
+                <flux:tooltip content="Disponible próximamente">
+                    <div>
+                        <flux:button variant="primary" icon="arrow-up-tray" disabled>Importar examen</flux:button>
+                    </div>
+                </flux:tooltip>
+            @endcan
+        </x-slot:acciones>
+    </x-pagina.encabezado>
+
+    <div class="w-full sm:w-64">
+        <flux:select wire:model.live="codigoProceso" label="Proceso">
+            @foreach ($procesos as $opcion)
+                <flux:select.option :value="$opcion->codigo_pro">{{ $opcion->codigo_pro }}</flux:select.option>
+            @endforeach
+        </flux:select>
+    </div>
+
+    <flux:table>
+        <flux:table.columns>
+            <flux:table.column>Archivo</flux:table.column>
+            <flux:table.column>Tipo</flux:table.column>
+            <flux:table.column align="center">Filas</flux:table.column>
+            <flux:table.column align="center">Observaciones</flux:table.column>
+            <flux:table.column>Cargado por</flux:table.column>
+            <flux:table.column>Fecha</flux:table.column>
+        </flux:table.columns>
+
+        <flux:table.rows>
+            <x-tabla.vacia :columnas="6" mensaje="Aún no se ha cargado ningún examen." icono="document-arrow-up">
+                <span class="max-w-md text-xs">
+                    Este módulo está en construcción. Aquí se importarán el padrón y las respuestas de la
+                    evaluación técnica{{ $proceso ? ' de los '.$inscritos.' postulante(s) inscritos' : '' }}.
+                </span>
+            </x-tabla.vacia>
+        </flux:table.rows>
+    </flux:table>
+</div>
