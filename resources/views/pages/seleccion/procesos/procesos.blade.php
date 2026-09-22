@@ -121,7 +121,7 @@
 
             <div class="grid gap-4 sm:grid-cols-2">
                 <flux:input wire:model="form.fechaEvaluacion" type="date" label="Fecha de la evaluación técnica" />
-                <flux:input wire:model="form.horaEvaluacion" label="Hora" placeholder="8:00 am. a 9:30 am." />
+                <flux:input wire:model="form.horaEvaluacion" label="Hora" placeholder="10:00 am. a 11:00 am." />
             </div>
 
             <flux:input wire:model="form.lugarEvaluacion" label="Lugar de la evaluación" />

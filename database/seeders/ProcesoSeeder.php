@@ -22,7 +22,7 @@ class ProcesoSeeder extends Seeder
                 'entidad_pro' => 'Corte Superior de Justicia de Ucayali',
                 'regimen_pro' => 'Decreto Legislativo N° 728, a plazo indeterminado',
                 'fecha_evaluacion_pro' => '2026-09-26',
-                'hora_evaluacion_pro' => '8:00 am. a 9:30 am.',
+                'hora_evaluacion_pro' => '10:00 am. a 11:00 am.',
                 'lugar_evaluacion_pro' => 'Universidad Nacional Intercultural de la Amazonía, San José Km. 0.5, Pucallpa',
                 'estado_pro' => EstadoRegistro::Habilitado,
             ],
