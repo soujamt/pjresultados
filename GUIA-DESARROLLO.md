@@ -16,7 +16,7 @@ proyecto en otra computadora y continuar el desarrollo con las mismas convencion
 | Unidades de organización | ✅ Operativo |
 | Puestos (importación desde el Anexo 06-A) | ✅ Operativo |
 | Inscripciones (importación con DNI, filtros, Excel para la lectora óptica) | ✅ Operativo |
-| Exámenes (carga de la lectora óptica) | 🚧 Pantalla en blanco, por construir |
+| Exámenes (carga del .txt de la lectora óptica, verificación por DNI, hoja de respuestas) | ✅ Operativo |
 | Resultados (cálculo, orden de mérito, PDF/Excel) | 🚧 Pantalla en blanco, por construir |
 
 Datos cargados en la base de desarrollo original: proceso **002-2026-UE-UCAYALI**, 27 puestos, 18 unidades de
@@ -108,13 +108,39 @@ cualquier columna): `Nº`, `DNI` o `DOCUMENTO NACIONAL DE IDENTIDAD (DNI)`, `APE
 `CÓDIGO DE PUESTO`, `PUESTO` y `UNIDAD DE ORGANIZACIÓN`. Las columnas `PABELLÓN`, `PISO` y `AULA` se ignoran
 a propósito. Si hay una sola observación no se guarda nada y se informa la fila exacta.
 
+### Exámenes de la lectora óptica
+
+```bash
+php artisan pj:importar-examenes "C:\ruta\23-09-2026_11-41-28.txt"
+```
+
+Desde la interfaz: **Exámenes › Importar desde la lectora**. Al elegir el archivo se muestra una vista previa
+sin guardar nada (hojas, quiénes quedarán sin examen, nombres distintos, puntajes y observaciones) y solo se
+escribe al confirmar. El .txt viene en Windows-1252, separado por punto
+y coma, con la cabecera `NRO DE DNI;APELLIDOS Y NOMBRES;Nota 30;Aciertos;Errores;Blancos;Dobles;RESPUESTAS;`
+y una columna por pregunta después de `RESPUESTAS`. El puntaje es el número de aciertos. Se rechaza todo el
+archivo si un DNI no está inscrito o se repite, si la nota no es igual a los aciertos o si una hoja suma un
+total de preguntas distinto al de las demás. Un nombre distinto al del padrón no detiene la carga: queda
+marcado para revisarlo con el filtro «Nombre distinto». Volver a subir un archivo actualiza por DNI, así que
+los lotes se pueden cargar uno tras otro; **Vaciar exámenes** borra las hojas de prueba antes de las reales.
+
+Para ensayar sin hojas reales hay un generador de archivos ficticios con el mismo formato (30 preguntas, nota
+igual a los aciertos). No se ejecuta en producción y por defecto escribe en `storage/app/private/lectora/`, que
+no se sube al repositorio porque lleva los DNI del padrón:
+
+```bash
+php artisan pj:generar-examenes-ficticios --faltantes=3            # 3 inscritos al azar no se presentan
+php artisan pj:generar-examenes-ficticios --faltantes=3 --semilla=7 # siempre el mismo archivo
+```
+
 ---
 
 ## 5. Estructura del proyecto
 
 ```
 app/
-├─ Console/Commands/      pj:importar-puestos, pj:importar-inscripciones, pj:iconos
+├─ Console/Commands/      pj:importar-puestos, pj:importar-inscripciones, pj:importar-examenes,
+│                         pj:generar-examenes-ficticios, pj:iconos
 ├─ Enums/                 Permiso (recurso.accion), EstadoRegistro, TipoImportacion
 ├─ Exports/               Exportaciones de maatwebsite/excel (PostulantesLectoraExport)
 ├─ Http/Controllers/      Solo descargas y cierre de sesión (controladores __invoke)
@@ -122,6 +148,7 @@ app/
 ├─ Models/ (+ Concerns/)  Eloquent; trait TieneEstado para habilitar/deshabilitar
 └─ Services/
    ├─ Auth/               Autenticación y permisos (AccesoService, cacheado por rol)
+   ├─ Evaluacion/         Lector del .txt de la lectora, importador y consultas de exámenes
    ├─ Excel/              LectorXlsx (lee .xlsx por streaming, sin librerías)
    ├─ Seguridad/          Usuarios y roles
    └─ Seleccion/          Procesos, unidades, puestos, inscripciones e importadores
@@ -252,11 +279,9 @@ npx skills add https://github.com/jakubkrehel/skills -s better-ui -s better-typo
 
 ## 10. Próximos pasos sugeridos
 
-1. **Exámenes:** importar el archivo de la lectora óptica (padrón y respuestas), cruzando a cada postulante
-   por su DNI con `tbl_inscripcion`. El Excel de *Inscripciones › Exportar Excel* es el que se carga en la
-   lectora antes del examen.
-2. **Resultados:** calcular el puntaje, el orden de mérito por puesto y la condición de cada postulante.
-   Falta definir con el Comité el número de vacantes por puesto (aún no existe ese campo).
-3. **Reportes:** PDF de resultados por puesto y por unidad con Dompdf (`config/dompdf.php` ya usa DejaVu Sans
+1. **Resultados:** orden de mérito por puesto a partir de `tbl_examen.puntaje_exa` y la condición de cada
+   postulante (los inscritos sin hoja no se presentaron). Falta definir con el Comité el puntaje mínimo, el
+   criterio de desempate y el número de vacantes por puesto (aún no existe ese campo).
+2. **Reportes:** PDF de resultados por puesto y por unidad con Dompdf (`config/dompdf.php` ya usa DejaVu Sans
    con subconjunto de fuentes) y Excel con `maatwebsite/excel` en `app/Exports`.
-4. **Pendiente de decidir:** si las flechas internas de Flux también pasan a Hugeicons.
+3. **Pendiente de decidir:** si las flechas internas de Flux también pasan a Hugeicons.
