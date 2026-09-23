@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\SalirController;
+use App\Http\Controllers\Evaluacion\DescargarResultadosController;
 use App\Http\Controllers\Seleccion\ExportarInscripcionesController;
 use Illuminate\Support\Facades\Route;
 
@@ -28,6 +29,9 @@ Route::middleware('auth')->group(function () {
     Route::name('evaluacion.')->group(function (): void {
         Route::livewire('/examenes', 'pages::evaluacion.examenes')->name('examenes');
         Route::livewire('/resultados', 'pages::evaluacion.resultados')->name('resultados');
+        Route::get('/resultados/{proceso:codigo_pro}/{formato}', DescargarResultadosController::class)
+            ->whereIn('formato', ['pdf', 'excel'])
+            ->name('resultados.descargar');
     });
 
     Route::prefix('seguridad')->name('seguridad.')->group(function (): void {
