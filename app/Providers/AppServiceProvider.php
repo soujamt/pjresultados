@@ -10,6 +10,7 @@ use Carbon\Translator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use Livewire\Blaze\Blaze;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -23,6 +24,12 @@ class AppServiceProvider extends ServiceProvider
         $this->registrarGates();
         $this->invalidarCacheDeAccesos();
         $this->nombrarLosMesesComoEnElPeru();
+
+        /*
+         * Blaze compila los componentes anonimos (x-panel, x-tabla.*, ...) a
+         * funciones PHP; Flux ya viene optimizado. Acelera las tablas largas.
+         */
+        Blaze::optimize()->in(resource_path('views/components'));
     }
 
     /**

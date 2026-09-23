@@ -2,6 +2,7 @@
 
 use App\Enums\ComiteSeleccion;
 use App\Enums\Permiso;
+use App\Models\Descalificacion;
 use App\Models\Examen;
 use App\Models\Inscripcion;
 use App\Models\Proceso;
@@ -286,7 +287,7 @@ it('muestra el orden de merito de un puesto y descalifica a un postulante', func
         ->test('pages::evaluacion.resultados', ['codigoProceso' => $inscripcion->proceso->codigo_pro])
         ->call('verPuesto', $inscripcion->id_pue)
         ->assertSee(['GALVEZ DORADO LUCIA', '17.33', '5.20', 'APTO'])
-        ->call('abrirDescalificacion', $inscripcion->id_ins)
+        ->set('idInscripcion', $inscripcion->id_ins)
         ->set('motivo', 'otro')
         ->call('descalificar')
         ->assertHasErrors(['otroMotivo' => 'required_if'])
@@ -331,6 +332,10 @@ it('solo descalifica quien tiene el permiso', function () {
 
     Livewire::actingAs(Usuario::factory()->create(['id_rol' => Rol::factory()->con([Permiso::ResultadosVer])]))
         ->test('pages::evaluacion.resultados', ['codigoProceso' => $inscripcion->proceso->codigo_pro])
-        ->call('abrirDescalificacion', $inscripcion->id_ins)
+        ->set('idInscripcion', $inscripcion->id_ins)
+        ->set('motivo', Descalificacion::MOTIVOS[0])
+        ->call('descalificar')
         ->assertForbidden();
+
+    expect($inscripcion->descalificacion()->exists())->toBeFalse();
 });

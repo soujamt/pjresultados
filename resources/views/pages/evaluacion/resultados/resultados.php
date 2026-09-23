@@ -117,22 +117,16 @@ class extends Component
         Flux::toast(text: 'Se guardaron los datos de la publicación.', variant: 'success');
     }
 
-    public function abrirDescalificacion(int $idInscripcion): void
-    {
-        $this->authorize(Permiso::ResultadosGenerar->value);
-
-        $this->idInscripcion = $idInscripcion;
-        $this->reset('motivo', 'otroMotivo');
-        $this->resetValidation();
-
-        Flux::modal('descalificar')->show();
-    }
-
+    /**
+     * El modal lo abre el navegador y deja el postulante en $idInscripcion;
+     * aqui llegan juntos el postulante y el motivo.
+     */
     public function descalificar(ResultadoService $servicio): void
     {
         $this->authorize(Permiso::ResultadosGenerar->value);
 
         $this->validate([
+            'idInscripcion' => ['required', 'integer'],
             'motivo' => ['required', Rule::in([...Descalificacion::MOTIVOS, self::OTRO_MOTIVO])],
             'otroMotivo' => ['required_if:motivo,'.self::OTRO_MOTIVO, 'nullable', 'string', 'max:255'],
         ], [
@@ -145,6 +139,7 @@ class extends Component
 
         $servicio->descalificar($inscripcion, $motivo, auth()->user());
 
+        $this->reset('idInscripcion', 'motivo', 'otroMotivo');
         Flux::modal('descalificar')->close();
         Flux::toast(text: "{$inscripcion->apellidos_nombres_ins} quedó descalificado/a.", variant: 'success');
     }
@@ -198,7 +193,6 @@ class extends Component
                 'descalificados' => array_sum(array_map(fn (ResultadoDePuesto $delPuesto): int => $delPuesto->descalificados(), $resultados)),
             ],
             'hayExamenes' => $proceso !== null && Examen::query()->delProceso($proceso->id_pro)->exists(),
-            'aDescalificar' => $this->idInscripcion === null ? null : Inscripcion::with('puesto')->find($this->idInscripcion),
             'motivos' => Descalificacion::MOTIVOS,
             'opcionOtroMotivo' => self::OTRO_MOTIVO,
         ];

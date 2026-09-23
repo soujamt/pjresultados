@@ -21,15 +21,25 @@
 
                 @can(App\Enums\Permiso::ResultadosExportar->value)
                     @if ($puedeDescargar)
-                        {{-- Descargas normales, sin wire:navigate: la respuesta es un archivo. --}}
-                        <flux:button :href="route('evaluacion.resultados.descargar', $parametros + ['formato' => 'excel'])" icon="xls-02">Excel</flux:button>
-                        <flux:button :href="route('evaluacion.resultados.descargar', $parametros + ['formato' => 'pdf'])" variant="primary" icon="pdf-02">
+                        <x-boton.descarga
+                            :href="route('evaluacion.resultados.descargar', $parametros + ['formato' => 'excel'])"
+                            icon="xls-02"
+                            variant="primary"
+                            color="green"
+                        >
+                            Excel
+                        </x-boton.descarga>
+                        <x-boton.descarga
+                            :href="route('evaluacion.resultados.descargar', $parametros + ['formato' => 'pdf'])"
+                            icon="pdf-02"
+                            variant="primary"
+                        >
                             {{ $puestoElegido ? 'PDF del puesto' : 'PDF de '.count($resultados).' puesto(s)' }}
-                        </flux:button>
+                        </x-boton.descarga>
                     @else
                         <flux:tooltip :content="$resultados === [] ? 'No hay postulantes con estos filtros' : 'Completa antes los datos de la publicación'">
                             <div class="flex gap-2">
-                                <flux:button icon="xls-02" disabled>Excel</flux:button>
+                                <flux:button variant="primary" color="green" icon="xls-02" disabled>Excel</flux:button>
                                 <flux:button variant="primary" icon="pdf-02" disabled>PDF</flux:button>
                             </div>
                         </flux:tooltip>
@@ -133,61 +143,90 @@
                 </div>
             </x-panel>
 
-            <x-tabla.marco>
-                <flux:table>
-                    <flux:table.columns>
-                        <flux:table.column class="w-12" align="end">N.º</flux:table.column>
-                        <flux:table.column class="w-24">DNI</flux:table.column>
-                        <flux:table.column>Apellidos y nombres</flux:table.column>
-                        <flux:table.column align="end">Nota</flux:table.column>
-                        <flux:table.column align="end">Nota parcial</flux:table.column>
-                        <flux:table.column align="end">Puntaje</flux:table.column>
-                        <flux:table.column>Condición</flux:table.column>
-                        <flux:table.column>Observaciones</flux:table.column>
-                        @can(App\Enums\Permiso::ResultadosGenerar->value)
-                            <flux:table.column align="end"><span class="sr-only">Acciones</span></flux:table.column>
-                        @endcan
-                    </flux:table.columns>
+            {{--
+                HTML plano en vez de flux:table: un puesto puede tener más de cien
+                filas y cada celda de Flux es un componente; así la tabla se vuelve
+                a dibujar en una fracción del tiempo. Se ve igual que las demás.
+            --}}
+            @php
+                $puedeDescalificar = auth()->user()->can(App\Enums\Permiso::ResultadosGenerar->value);
+            @endphp
 
-                    <flux:table.rows>
-                        @foreach ($puestoElegido->filas as $fila)
-                            <flux:table.row :key="$fila->inscripcion->id_ins">
-                                <flux:table.cell align="end" class="text-zinc-400 tabular-nums">{{ $fila->numero }}</flux:table.cell>
-                                <flux:table.cell class="text-sm text-zinc-700 tabular-nums dark:text-zinc-300">{{ $fila->inscripcion->documento_ins }}</flux:table.cell>
-                                <flux:table.cell class="text-sm font-medium whitespace-normal text-zinc-900 dark:text-white">{{ $fila->inscripcion->apellidos_nombres_ins }}</flux:table.cell>
-                                <flux:table.cell align="end" class="text-sm text-zinc-700 tabular-nums dark:text-zinc-300">{{ $fila->nota }}</flux:table.cell>
-                                <flux:table.cell align="end" class="text-sm text-zinc-700 tabular-nums dark:text-zinc-300">{{ $fila->notaParcialTexto() }}</flux:table.cell>
-                                <flux:table.cell align="end" class="text-sm font-semibold text-zinc-900 tabular-nums dark:text-white">{{ $fila->puntajeTexto() }}</flux:table.cell>
-                                <flux:table.cell>
-                                    <flux:badge size="sm" :color="$fila->condicion->color()" inset="top bottom">{{ $fila->condicion->etiqueta() }}</flux:badge>
-                                </flux:table.cell>
-                                <flux:table.cell class="min-w-64 text-xs whitespace-normal text-zinc-500">{{ $fila->observacion }}</flux:table.cell>
-                                @can(App\Enums\Permiso::ResultadosGenerar->value)
-                                    <flux:table.cell align="end">
-                                        @if ($fila->descalificado)
-                                            <x-tabla.accion
-                                                wire:click="quitarDescalificacion({{ $fila->inscripcion->id_ins }})"
-                                                wire:confirm="¿Quitar la descalificación de {{ $fila->inscripcion->apellidos_nombres_ins }}? Volverá a calificarse con su hoja de examen."
-                                                icon="undo-02"
-                                                tooltip="Quitar descalificación"
-                                            />
-                                        @else
-                                            <x-tabla.accion
-                                                wire:click="abrirDescalificacion({{ $fila->inscripcion->id_ins }})"
-                                                icon="user-block-01"
-                                                tooltip="Descalificar"
-                                            />
-                                        @endif
-                                    </flux:table.cell>
-                                @endcan
-                            </flux:table.row>
-                        @endforeach
-                    </flux:table.rows>
-                </flux:table>
+            <x-tabla.marco compacta>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-left">
+                        <thead class="bg-zinc-50 text-zinc-500 uppercase tracking-[0.04em] dark:bg-white/[0.03] dark:text-zinc-400">
+                            <tr class="*:font-semibold">
+                                <th scope="col" class="w-12 ps-4 pe-3 text-end">N.º</th>
+                                <th scope="col" class="w-24 px-3">DNI</th>
+                                <th scope="col" class="px-3">Apellidos y nombres</th>
+                                <th scope="col" class="px-3 text-end">Nota</th>
+                                <th scope="col" class="px-3 text-end">Nota parcial</th>
+                                <th scope="col" class="px-3 text-end">Puntaje</th>
+                                <th scope="col" class="px-3">Condición</th>
+                                <th scope="col" @class(['px-3', 'pe-4' => ! $puedeDescalificar])>Observaciones</th>
+                                @if ($puedeDescalificar)
+                                    <th scope="col" class="ps-3 pe-4"><span class="sr-only">Acciones</span></th>
+                                @endif
+                            </tr>
+                        </thead>
+
+                        <tbody class="divide-y divide-zinc-100 dark:divide-white/10">
+                            @foreach ($puestoElegido->filas as $fila)
+                                <tr wire:key="fila-{{ $fila->inscripcion->id_ins }}" class="hover:bg-black/[0.018] dark:hover:bg-white/[0.025]">
+                                    <td class="ps-4 pe-3 text-end text-zinc-400 tabular-nums">{{ $fila->numero }}</td>
+                                    <td class="px-3 text-zinc-700 tabular-nums dark:text-zinc-300">{{ $fila->inscripcion->documento_ins }}</td>
+                                    <td class="px-3 font-medium text-zinc-900 dark:text-white">{{ $fila->inscripcion->apellidos_nombres_ins }}</td>
+                                    <td class="px-3 text-end text-zinc-700 tabular-nums dark:text-zinc-300">{{ $fila->nota }}</td>
+                                    <td class="px-3 text-end text-zinc-700 tabular-nums dark:text-zinc-300">{{ $fila->notaParcialTexto() }}</td>
+                                    <td class="px-3 text-end font-semibold text-zinc-900 tabular-nums dark:text-white">{{ $fila->puntajeTexto() }}</td>
+                                    <td class="px-3 whitespace-nowrap">
+                                        <span @class([
+                                            'inline-flex rounded-md px-1.5 py-0.5 text-xs font-medium',
+                                            'bg-green-400/15 text-green-800 dark:text-green-300' => $fila->condicion === App\Enums\CondicionResultado::Apto,
+                                            'bg-red-400/15 text-red-700 dark:text-red-300' => $fila->condicion === App\Enums\CondicionResultado::NoApto,
+                                        ])>{{ $fila->condicion->etiqueta() }}</span>
+                                    </td>
+                                    <td @class(['min-w-64 px-3 text-xs! text-zinc-500', 'pe-4' => ! $puedeDescalificar])>{{ $fila->observacion }}</td>
+                                    @if ($puedeDescalificar)
+                                        <td class="ps-3 pe-4 text-end">
+                                            @if ($fila->descalificado)
+                                                <button
+                                                    type="button"
+                                                    wire:click="quitarDescalificacion({{ $fila->inscripcion->id_ins }})"
+                                                    wire:confirm="¿Quitar la descalificación de {{ $fila->inscripcion->apellidos_nombres_ins }}? Volverá a calificarse con su hoja de examen."
+                                                    title="Quitar descalificación"
+                                                    aria-label="Quitar la descalificación de {{ $fila->inscripcion->apellidos_nombres_ins }}"
+                                                    class="inline-flex size-8 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-800/5 hover:text-zinc-800 data-loading:opacity-50 dark:text-zinc-400 dark:hover:bg-white/15 dark:hover:text-white"
+                                                >
+                                                    <flux:icon.undo-02 variant="mini" />
+                                                </button>
+                                            @else
+                                                <button
+                                                    type="button"
+                                                    x-on:click="$dispatch('descalificar-postulante', {{ Js::from([
+                                                        'id' => $fila->inscripcion->id_ins,
+                                                        'nombres' => $fila->inscripcion->apellidos_nombres_ins,
+                                                        'documento' => $fila->inscripcion->documento_ins,
+                                                    ]) }})"
+                                                    title="Descalificar"
+                                                    aria-label="Descalificar a {{ $fila->inscripcion->apellidos_nombres_ins }}"
+                                                    class="inline-flex size-8 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-800/5 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-white/15 dark:hover:text-white"
+                                                >
+                                                    <flux:icon.user-block-01 variant="mini" />
+                                                </button>
+                                            @endif
+                                        </td>
+                                    @endif
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
             </x-tabla.marco>
         @else
             {{-- Todos los puestos: un resumen por puesto; cada uno se abre con su orden de mérito. --}}
-            <x-tabla.marco>
+            <x-tabla.marco compacta>
                 <flux:table>
                     <flux:table.columns>
                         <flux:table.column class="w-24">Código</flux:table.column>
@@ -218,15 +257,14 @@
                                         <x-tabla.accion wire:click="verPuesto({{ $delPuesto->puesto->id_pue }})" icon="view" tooltip="Ver orden de mérito" />
                                         @can(App\Enums\Permiso::ResultadosExportar->value)
                                             @if ($proceso->publicacionCompleta())
-                                                <flux:tooltip content="PDF del puesto">
-                                                    <flux:button
-                                                        :href="route('evaluacion.resultados.descargar', ['proceso' => $proceso->codigo_pro, 'formato' => 'pdf', 'puesto' => $delPuesto->puesto->id_pue])"
-                                                        size="sm"
-                                                        variant="subtle"
-                                                        icon="pdf-02"
-                                                        aria-label="PDF del puesto {{ $delPuesto->puesto->codigo_pue }}"
-                                                    />
-                                                </flux:tooltip>
+                                                <x-boton.descarga
+                                                    :href="route('evaluacion.resultados.descargar', ['proceso' => $proceso->codigo_pro, 'formato' => 'pdf', 'puesto' => $delPuesto->puesto->id_pue])"
+                                                    size="sm"
+                                                    variant="subtle"
+                                                    icon="pdf-02"
+                                                    tooltip="PDF del puesto"
+                                                    aria-label="PDF del puesto {{ $delPuesto->puesto->codigo_pue }}"
+                                                />
                                             @endif
                                         @endcan
                                     </div>
@@ -287,40 +325,57 @@
         </form>
     </flux:modal>
 
-    <flux:modal name="descalificar" class="w-full md:max-w-xl">
-        <form wire:submit="descalificar" class="space-y-6">
-            <div>
-                <flux:heading size="lg">Descalificar postulante</flux:heading>
-                @if ($aDescalificar)
-                    <flux:subheading>
-                        {{ $aDescalificar->apellidos_nombres_ins }} · DNI {{ $aDescalificar->documento_ins }} · {{ $aDescalificar->puesto->codigo_pue }}
+    {{--
+        El modal se abre y se llena en el navegador (Alpine), sin ir al servidor:
+        solo «Descalificar» hace una petición. Así abrir el modal y elegir un
+        motivo es instantáneo aunque el puesto tenga cien postulantes.
+    --}}
+    <div
+        x-data="{ postulante: { nombres: '', documento: '' } }"
+        x-on:descalificar-postulante.window="
+            postulante = $event.detail;
+            $wire.idInscripcion = $event.detail.id;
+            $wire.motivo = '';
+            $wire.otroMotivo = '';
+            $flux.modal('descalificar').show();
+        "
+    >
+        <flux:modal name="descalificar" class="w-full md:max-w-xl">
+            <form wire:submit="descalificar" class="space-y-6">
+                <div>
+                    <flux:heading size="lg">Descalificar postulante</flux:heading>
+                    <flux:subheading class="tabular-nums">
+                        <span x-text="postulante.nombres"></span> · DNI <span x-text="postulante.documento"></span>
+                        @if ($puestoElegido)
+                            · {{ $puestoElegido->puesto->codigo_pue }}
+                        @endif
                     </flux:subheading>
-                @endif
-            </div>
+                </div>
 
-            <flux:radio.group wire:model.live="motivo" label="Motivo que se publicará en observaciones">
-                @foreach ($motivos as $opcion)
-                    <flux:radio :value="$opcion" :label="$opcion" />
-                @endforeach
-                <flux:radio :value="$opcionOtroMotivo" label="Otro motivo" />
-            </flux:radio.group>
+                <flux:radio.group wire:model="motivo" label="Motivo que se publicará en observaciones">
+                    @foreach ($motivos as $opcion)
+                        <flux:radio :value="$opcion" :label="$opcion" />
+                    @endforeach
+                    <flux:radio :value="$opcionOtroMotivo" label="Otro motivo" />
+                </flux:radio.group>
 
-            @if ($motivo === $opcionOtroMotivo)
-                <flux:textarea wire:model="otroMotivo" label="Motivo" rows="2" placeholder="DESCALIFICADO/A - …" />
-            @endif
+                <div x-show="$wire.motivo === {{ Js::from($opcionOtroMotivo) }}" x-cloak>
+                    <flux:textarea wire:model="otroMotivo" label="Motivo" rows="2" placeholder="DESCALIFICADO/A - …" />
+                </div>
 
-            <p class="rounded-lg bg-zinc-50 px-4 py-3 text-sm text-pretty text-zinc-600 dark:bg-white/[0.03] dark:text-zinc-400">
-                Quedará <strong class="font-semibold text-zinc-800 dark:text-zinc-200">NO APTO</strong> con nota y puntaje 0, aunque tenga
-                hoja de examen. La descalificación se puede quitar después.
-            </p>
+                <p class="rounded-lg bg-zinc-50 px-4 py-3 text-sm text-pretty text-zinc-600 dark:bg-white/[0.03] dark:text-zinc-400">
+                    Quedará <strong class="font-semibold text-zinc-800 dark:text-zinc-200">NO APTO</strong> con nota y puntaje 0, aunque
+                    tenga hoja de examen. La descalificación se puede quitar después.
+                </p>
 
-            <div class="flex justify-end gap-2">
-                <flux:modal.close>
-                    <flux:button variant="ghost">Cancelar</flux:button>
-                </flux:modal.close>
+                <div class="flex justify-end gap-2">
+                    <flux:modal.close>
+                        <flux:button variant="ghost">Cancelar</flux:button>
+                    </flux:modal.close>
 
-                <flux:button type="submit" variant="danger" icon="user-block-01">Descalificar</flux:button>
-            </div>
-        </form>
-    </flux:modal>
+                    <flux:button type="submit" variant="danger" icon="user-block-01">Descalificar</flux:button>
+                </div>
+            </form>
+        </flux:modal>
+    </div>
 </div>
