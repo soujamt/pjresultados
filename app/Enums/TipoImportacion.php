@@ -10,12 +10,14 @@ enum TipoImportacion: string
 {
     case Puestos = 'puestos';
     case Inscripciones = 'inscripciones';
+    case Examenes = 'examenes';
 
     public function etiqueta(): string
     {
         return match ($this) {
             self::Puestos => 'Puestos',
             self::Inscripciones => 'Inscripciones',
+            self::Examenes => 'Exámenes',
         };
     }
 }

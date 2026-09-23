@@ -49,6 +49,7 @@ enum Permiso: string
 
     case ExamenesVer = 'examenes.ver';
     case ExamenesImportar = 'examenes.importar';
+    case ExamenesEliminar = 'examenes.eliminar';
 
     case ResultadosVer = 'resultados.ver';
     case ResultadosGenerar = 'resultados.generar';
@@ -83,7 +84,8 @@ enum Permiso: string
             self::InscripcionesExportar => 'Exportar inscripciones a Excel',
             self::InscripcionesEliminar => 'Eliminar inscripciones',
             self::ExamenesVer => 'Ver exámenes',
-            self::ExamenesImportar => 'Importar exámenes',
+            self::ExamenesImportar => 'Importar exámenes de la lectora óptica',
+            self::ExamenesEliminar => 'Vaciar los exámenes cargados',
             self::ResultadosVer => 'Ver resultados',
             self::ResultadosGenerar => 'Generar resultados',
             self::ResultadosExportar => 'Exportar resultados',

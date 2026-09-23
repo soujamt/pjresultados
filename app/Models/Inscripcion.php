@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * Postulante inscrito a un puesto del proceso. El documento de identidad es
@@ -21,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $apellidos_nombres_ins
  * @property-read Proceso $proceso
  * @property-read Puesto $puesto
+ * @property-read ?Examen $examen
  */
 class Inscripcion extends Model
 {
@@ -63,6 +65,14 @@ class Inscripcion extends Model
     public function puesto(): BelongsTo
     {
         return $this->belongsTo(Puesto::class, 'id_pue', 'id_pue')->withTrashed();
+    }
+
+    /**
+     * @return HasOne<Examen, $this>
+     */
+    public function examen(): HasOne
+    {
+        return $this->hasOne(Examen::class, 'id_ins', 'id_ins');
     }
 
     /**
