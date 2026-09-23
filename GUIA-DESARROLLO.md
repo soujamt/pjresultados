@@ -17,7 +17,7 @@ proyecto en otra computadora y continuar el desarrollo con las mismas convencion
 | Puestos (importación desde el Anexo 06-A) | ✅ Operativo |
 | Inscripciones (importación con DNI, filtros, Excel para la lectora óptica) | ✅ Operativo |
 | Exámenes (carga del .txt de la lectora óptica, verificación por DNI, hoja de respuestas) | ✅ Operativo |
-| Resultados (cálculo, orden de mérito, PDF/Excel) | 🚧 Pantalla en blanco, por construir |
+| Resultados (Anexo 07: orden de mérito, aptos, descalificaciones, PDF y Excel) | ✅ Operativo |
 
 Datos cargados en la base de desarrollo original: proceso **002-2026-UE-UCAYALI**, 27 puestos, 18 unidades de
 organización y 682 postulantes. **Esos datos no están en el repositorio** (ver sección 4).
@@ -133,6 +133,27 @@ php artisan pj:generar-examenes-ficticios --faltantes=3            # 3 inscritos
 php artisan pj:generar-examenes-ficticios --faltantes=3 --semilla=7 # siempre el mismo archivo
 ```
 
+### Resultados (Anexo 07)
+
+Se calculan al momento con los exámenes cargados (`app/Services/Evaluacion/ResultadoService.php`):
+
+| Columna | Cálculo |
+| --- | --- |
+| Nota obtenida | aciertos de la hoja (sobre 30) |
+| Nota parcial | nota × 20 / 30, se muestra con 2 decimales |
+| Puntaje de evaluación técnica | nota parcial exacta × 0,3 (= nota × 0,2), con 2 decimales |
+| Condición | APTO si el puntaje ≥ puntaje mínimo del proceso (3,9 por defecto: hacen falta 20 aciertos) |
+
+El orden es de mayor a menor puntaje y los empates van por orden alfabético (la Ñ después de la N, sin
+depender de la extensión intl). Observaciones automáticas: «NO ALCANZÓ EL PUNTAJE MÍNIMO APROBATORIO» y «NO SE
+PRESENTÓ» (sin hoja). Las demás (se retiró de la sala, etc.) se registran con **Descalificar** y dejan al
+postulante NO APTO con puntaje 0. El pie del anexo necesita los **Datos de la publicación** (fecha límite y
+correo para los documentos, fecha, ciudad y comité); sin ellos no se descarga nada.
+
+El PDF (`resources/views/reportes/resultados-tecnica.blade.php`, Dompdf con Helvetica) y el Excel
+(`app/Exports/ResultadosTecnicaHoja.php`, una hoja por puesto) replican el Anexo 07 oficial. El logo de los
+reportes es `public/img/pj-logo-reporte.jpg`, sin transparencia: Dompdf procesa lento los PNG con canal alfa.
+
 ---
 
 ## 5. Estructura del proyecto
@@ -141,8 +162,9 @@ php artisan pj:generar-examenes-ficticios --faltantes=3 --semilla=7 # siempre el
 app/
 ├─ Console/Commands/      pj:importar-puestos, pj:importar-inscripciones, pj:importar-examenes,
 │                         pj:generar-examenes-ficticios, pj:iconos
-├─ Enums/                 Permiso (recurso.accion), EstadoRegistro, TipoImportacion
-├─ Exports/               Exportaciones de maatwebsite/excel (PostulantesLectoraExport)
+├─ Enums/                 Permiso (recurso.accion), EstadoRegistro, TipoImportacion, CondicionResultado,
+│                         ComiteSeleccion
+├─ Exports/               Exportaciones de maatwebsite/excel (PostulantesLectoraExport, ResultadosTecnicaExport)
 ├─ Http/Controllers/      Solo descargas y cierre de sesión (controladores __invoke)
 ├─ Livewire/Forms/        Form Objects: validación y estado de cada formulario
 ├─ Models/ (+ Concerns/)  Eloquent; trait TieneEstado para habilitar/deshabilitar
@@ -279,9 +301,8 @@ npx skills add https://github.com/jakubkrehel/skills -s better-ui -s better-typo
 
 ## 10. Próximos pasos sugeridos
 
-1. **Resultados:** orden de mérito por puesto a partir de `tbl_examen.puntaje_exa` y la condición de cada
-   postulante (los inscritos sin hoja no se presentaron). Falta definir con el Comité el puntaje mínimo, el
-   criterio de desempate y el número de vacantes por puesto (aún no existe ese campo).
-2. **Reportes:** PDF de resultados por puesto y por unidad con Dompdf (`config/dompdf.php` ya usa DejaVu Sans
-   con subconjunto de fuentes) y Excel con `maatwebsite/excel` en `app/Exports`.
+1. **Cierre de resultados:** hoy se recalculan al momento. Si el comité lo pide, agregar un «cerrar
+   resultados» que congele lo publicado para que una recarga de exámenes no lo cambie.
+2. **Rendimiento del PDF completo:** el de un puesto sale en menos de 1 s; el de los 27 puestos, en unos 7 s
+   (Dompdf es lento con tablas grandes). Si molesta, generarlo en una cola.
 3. **Pendiente de decidir:** si las flechas internas de Flux también pasan a Hugeicons.
