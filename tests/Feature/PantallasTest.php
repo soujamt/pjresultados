@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\ComiteSeleccion;
 use App\Enums\Permiso;
 use App\Models\Examen;
 use App\Models\Inscripcion;
@@ -270,4 +271,66 @@ it('no elimina la inscripcion de quien ya tiene su examen', function () {
         ->call('eliminar', $examen->id_ins);
 
     expect(Inscripcion::find($examen->id_ins))->not->toBeNull();
+});
+
+it('muestra el orden de merito de un puesto y descalifica a un postulante', function () {
+    $examen = Examen::factory()->create([
+        'id_ins' => Inscripcion::factory()->create(['apellidos_nombres_ins' => 'GALVEZ DORADO LUCIA']),
+        'puntaje_exa' => 26,
+        'aciertos_exa' => 26,
+        'errores_exa' => 4,
+    ]);
+    $inscripcion = $examen->inscripcion;
+
+    $pantalla = Livewire::actingAs(Usuario::factory()->superAdministrador()->create())
+        ->test('pages::evaluacion.resultados', ['codigoProceso' => $inscripcion->proceso->codigo_pro])
+        ->call('verPuesto', $inscripcion->id_pue)
+        ->assertSee(['GALVEZ DORADO LUCIA', '17.33', '5.20', 'APTO'])
+        ->call('abrirDescalificacion', $inscripcion->id_ins)
+        ->set('motivo', 'otro')
+        ->call('descalificar')
+        ->assertHasErrors(['otroMotivo' => 'required_if'])
+        ->set('otroMotivo', 'descalificado/a - suplantación de identidad')
+        ->call('descalificar')
+        ->assertHasNoErrors()
+        ->assertSee('DESCALIFICADO/A - SUPLANTACIÓN DE IDENTIDAD');
+
+    expect($inscripcion->descalificacion?->motivo_des)->toBe('DESCALIFICADO/A - SUPLANTACIÓN DE IDENTIDAD');
+
+    $pantalla->call('quitarDescalificacion', $inscripcion->id_ins);
+
+    expect($inscripcion->descalificacion()->exists())->toBeFalse();
+});
+
+it('guarda los datos de la publicacion del anexo 07', function () {
+    $proceso = Proceso::factory()->create();
+
+    Livewire::actingAs(Usuario::factory()->superAdministrador()->create())
+        ->test('pages::evaluacion.resultados', ['codigoProceso' => $proceso->codigo_pro])
+        ->call('abrirPublicacion')
+        ->assertSet('publicacion.puntajeMinimo', '3.9')
+        ->set('publicacion.fechaLimite', '2026-09-28')
+        ->set('publicacion.correo', 'no-es-un-correo')
+        ->set('publicacion.fechaResultados', '2026-09-27')
+        ->set('publicacion.comite', 'ad_hoc')
+        ->call('guardarPublicacion')
+        ->assertHasErrors(['publicacion.correo' => 'email'])
+        ->set('publicacion.correo', 'Convocatorias@Ejemplo.gob.pe')
+        ->call('guardarPublicacion')
+        ->assertHasNoErrors();
+
+    $proceso->refresh();
+
+    expect($proceso->publicacionCompleta())->toBeTrue()
+        ->and($proceso->correo_documentos_pro)->toBe('convocatorias@ejemplo.gob.pe')
+        ->and($proceso->comite_pro)->toBe(ComiteSeleccion::AdHoc);
+});
+
+it('solo descalifica quien tiene el permiso', function () {
+    $inscripcion = Inscripcion::factory()->create();
+
+    Livewire::actingAs(Usuario::factory()->create(['id_rol' => Rol::factory()->con([Permiso::ResultadosVer])]))
+        ->test('pages::evaluacion.resultados', ['codigoProceso' => $inscripcion->proceso->codigo_pro])
+        ->call('abrirDescalificacion', $inscripcion->id_ins)
+        ->assertForbidden();
 });

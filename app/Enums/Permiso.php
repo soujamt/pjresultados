@@ -87,8 +87,8 @@ enum Permiso: string
             self::ExamenesImportar => 'Importar exámenes de la lectora óptica',
             self::ExamenesEliminar => 'Vaciar los exámenes cargados',
             self::ResultadosVer => 'Ver resultados',
-            self::ResultadosGenerar => 'Generar resultados',
-            self::ResultadosExportar => 'Exportar resultados',
+            self::ResultadosGenerar => 'Descalificar postulantes y editar los datos de la publicación',
+            self::ResultadosExportar => 'Descargar los resultados en PDF y Excel',
         };
     }
 
