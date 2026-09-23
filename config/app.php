@@ -45,6 +45,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Arial para los PDF
+    |--------------------------------------------------------------------------
+    |
+    | Los reportes oficiales van en Arial. Es una fuente de Microsoft que no se
+    | puede redistribuir, asi que no esta en el repositorio: se usa la que
+    | tenga instalada el servidor. Sin esta variable se busca en las carpetas
+    | de fuentes de Windows, Linux (ttf-mscorefonts) y macOS; si no aparece,
+    | los PDF salen en Helvetica, que tiene las mismas medidas.
+    |
+    */
+
+    'fuente_arial' => env('PDF_FUENTE_ARIAL'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Debug Mode
     |--------------------------------------------------------------------------
     |

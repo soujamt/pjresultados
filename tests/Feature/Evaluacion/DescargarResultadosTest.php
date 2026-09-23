@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\CondicionResultado;
 use App\Enums\Permiso;
 use App\Models\Examen;
 use App\Models\Inscripcion;
@@ -8,7 +9,11 @@ use App\Models\Puesto;
 use App\Models\Rol;
 use App\Models\Unidad;
 use App\Models\Usuario;
+use App\Services\Evaluacion\FilaDeResultado;
+use App\Services\Evaluacion\ResultadoDePuesto;
 use App\Services\Evaluacion\ResultadoService;
+use App\Services\Reportes\FuenteArial;
+use Barryvdh\DomPDF\Facade\Pdf;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 beforeEach(function () {
@@ -95,3 +100,62 @@ it('no descarga el puesto de otro proceso', function () {
 
     descargarResultados('pdf', ['puesto' => $ajeno->id_pue])->assertNotFound();
 });
+
+it('no deja la firma ni el pie solos en una pagina del PDF', function (int $postulantes) {
+    $filas = array_map(fn (int $numero): FilaDeResultado => new FilaDeResultado(
+        numero: $numero,
+        inscripcion: new Inscripcion(['documento_ins' => sprintf('7%07d', $numero), 'apellidos_nombres_ins' => "POSTULANTE {$numero} DE PRUEBA"]),
+        nota: 10,
+        notaParcial: 10 * 20 / 30,
+        puntaje: 2.0,
+        condicion: CondicionResultado::NoApto,
+        observacion: ResultadoService::NO_ALCANZO,
+        rindio: true,
+        descalificado: false,
+    ), range(1, $postulantes));
+
+    $pagina = ['fila' => 0, 'filasEnLaUltima' => 0, 'pie' => 0, 'firma' => 0];
+    $pdf = Pdf::loadView('reportes.resultados-tecnica', [
+        'proceso' => $this->proceso,
+        'resultados' => [new ResultadoDePuesto($this->puesto, $filas)],
+    ])->setPaper('a4', 'landscape');
+
+    $pdf->getDomPDF()->setCallbacks([[
+        'event' => 'begin_frame',
+        'f' => function ($frame, $canvas) use (&$pagina): void {
+            $nodo = $frame->get_node();
+            $numero = $canvas->get_page_number();
+
+            if ($nodo->nodeName === 'tr' && $nodo->parentNode?->nodeName === 'tbody') {
+                $pagina['filasEnLaUltima'] = $numero === $pagina['fila'] ? $pagina['filasEnLaUltima'] + 1 : 1;
+                $pagina['fila'] = $numero;
+            } elseif ($nodo instanceof DOMElement && in_array($nodo->getAttribute('class'), ['pie', 'firma'], true)) {
+                $pagina[$nodo->getAttribute('class')] = $numero;
+            }
+        },
+    ]]);
+    $pdf->output();
+
+    expect([$pagina['pie'], $pagina['firma']])->toBe([$pagina['fila'], $pagina['fila']])
+        ->and($pagina['filasEnLaUltima'])->toBeGreaterThanOrEqual(min(4, $postulantes));
+})->with([
+    /*
+     * Tamaños en los que, sin las reglas de salto de página, el cierre queda
+     * mal. Cambian con la fuente: los PDF salen en Arial donde el servidor la
+     * tiene y en Helvetica donde no (como en la integración continua).
+     */
+    'Arial: la firma sola en la segunda página' => 12,
+    'Arial: el pie sin filas' => 15,
+    'Arial: una sola fila en la última página' => 18,
+    'Arial: la firma sola en la tercera página' => 45,
+    'Helvetica: la firma sola en la segunda página' => 17,
+    'Helvetica: el pie sin filas' => 20,
+    'Helvetica: una sola fila en la última página' => 23,
+    'Helvetica: la firma sola en la tercera página' => 56,
+]);
+
+it('descarga el PDF en Arial cuando el servidor la tiene instalada', function () {
+    $respuesta = descargarResultados('pdf', ['puesto' => $this->puesto->id_pue])->assertOk();
+
+    expect($respuesta->getContent())->toContain('+ArialMT')->toContain('+Arial-BoldMT');
+})->skip(fn () => app(FuenteArial::class)->ubicar() === null, 'El equipo no tiene Arial instalada; el PDF sale en Helvetica.');

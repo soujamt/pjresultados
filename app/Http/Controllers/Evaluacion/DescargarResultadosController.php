@@ -9,6 +9,7 @@ use App\Models\Proceso;
 use App\Models\Puesto;
 use App\Models\Unidad;
 use App\Services\Evaluacion\ResultadoService;
+use App\Services\Reportes\FuenteArial;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -23,7 +24,7 @@ class DescargarResultadosController extends Controller
      * Anexo 07, en PDF o en Excel. Sin puesto trae todos los del proceso (o de
      * la unidad), cada uno en su propia página u hoja.
      */
-    public function __invoke(Request $request, Proceso $proceso, string $formato, ResultadoService $resultados): Response|BinaryFileResponse
+    public function __invoke(Request $request, Proceso $proceso, string $formato, ResultadoService $resultados, FuenteArial $arial): Response|BinaryFileResponse
     {
         Gate::authorize(Permiso::ResultadosExportar->value);
 
@@ -53,8 +54,10 @@ class DescargarResultadosController extends Controller
             return Excel::download(new ResultadosTecnicaExport($proceso, $porPuesto), "{$nombre}.xlsx");
         }
 
-        return Pdf::loadView('reportes.resultados-tecnica', ['proceso' => $proceso, 'resultados' => $porPuesto])
-            ->setPaper('a4', 'landscape')
-            ->download("{$nombre}.pdf");
+        $pdf = Pdf::loadView('reportes.resultados-tecnica', ['proceso' => $proceso, 'resultados' => $porPuesto])
+            ->setPaper('a4', 'landscape');
+        $arial->registrar($pdf->getDomPDF());
+
+        return $pdf->download("{$nombre}.pdf");
     }
 }

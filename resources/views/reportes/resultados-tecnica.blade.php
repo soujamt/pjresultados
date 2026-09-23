@@ -1,8 +1,9 @@
 {{--
     Anexo 07: resultados de la evaluación técnica, uno por puesto. Replica el
-    formato oficial en Excel (A4 horizontal, Arial, cabecera guinda). Dompdf
-    usa Helvetica, que tiene las mismas medidas que Arial y no hay que
-    incrustarla. La cabecera de la tabla se repite en cada página.
+    formato oficial en Excel (A4 horizontal, Arial, cabecera guinda). Arial la
+    registra FuenteArial desde las fuentes del servidor; si no la tiene, sale
+    Helvetica, que tiene las mismas medidas. La cabecera de la tabla se repite
+    en cada página.
 --}}
 <!DOCTYPE html>
 <html lang="es">
@@ -10,14 +11,19 @@
     <meta charset="utf-8">
     <title>Resultados de la evaluación técnica · {{ $proceso->codigo_pro }}</title>
     <style>
+        /*
+         * Medidas del Anexo 07 tal como sale del Excel guardado como PDF: Excel
+         * reduce la hoja a cerca del 70 % para que entre en la página, así que
+         * las letras son más chicas que las de la hoja y los márgenes, amplios.
+         */
         @page {
-            margin: 1.2cm 1.2cm 1.3cm;
+            margin: 1.9cm 2.5cm;
         }
 
         body {
             margin: 0;
-            font-family: Helvetica, Arial, sans-serif;
-            font-size: 9pt;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 7pt;
             color: #000;
         }
 
@@ -36,39 +42,43 @@
         }
 
         .membrete .logo {
-            width: 3.2cm;
+            width: 2.6cm;
         }
 
         .membrete .logo img {
-            width: 1.7cm;
+            width: 1.5cm;
         }
 
         .anexo {
-            padding-top: 0.25cm !important;
+            padding-top: 0.2cm !important;
             text-align: center;
-            font-size: 11pt;
+            font-size: 8.5pt;
             font-weight: bold;
         }
 
         h1 {
-            margin: 0 0 0.2cm;
+            margin: 0.4cm 0 0;
             text-align: center;
-            font-size: 12.5pt;
+            font-size: 10pt;
             font-weight: bold;
         }
 
+        h1.proceso {
+            margin-top: 0.3cm;
+        }
+
         h1.regimen {
-            margin-top: 0.55cm;
+            margin-top: 0.8cm;
         }
 
         h1.titulo {
-            margin: 0.55cm 0 0.4cm;
+            margin: 0.45cm 0 0.45cm;
         }
 
         .datos-del-puesto {
             margin: 0 0 0.3cm;
-            font-size: 10.5pt;
-            line-height: 1.45;
+            font-size: 8.5pt;
+            line-height: 1.35;
         }
 
         .datos-del-puesto strong {
@@ -84,8 +94,8 @@
         table.resultados th,
         table.resultados td {
             border: 0.75pt solid #000;
-            padding: 2.5pt 3pt;
-            line-height: 1.15;
+            padding: 2.2pt 3pt;
+            line-height: 1.05;
             text-align: center;
             vertical-align: middle;
         }
@@ -93,33 +103,47 @@
         table.resultados th {
             background-color: #990000;
             color: #fff;
-            font-size: 7.5pt;
+            font-size: 6pt;
             font-weight: bold;
-            line-height: 1.3;
+            line-height: 1.2;
         }
 
         table.resultados td {
             color: #333300;
-            font-size: 7.5pt;
+            font-size: 6pt;
         }
 
         table.resultados td.nombres {
             text-align: left;
         }
 
-        /* Así «DESCALIFICADO/A - NO ALCANZÓ EL PUNTAJE MÍNIMO APROBATORIO» entra en una línea. */
-        table.resultados td.observacion {
-            font-size: 7pt;
-        }
-
         table.resultados tr {
             page-break-inside: avoid;
         }
 
+        /*
+         * Saltos de página: la firma nunca queda sola. El cierre (párrafo y
+         * firma) no se parte ni se separa de la tabla, y entre las últimas
+         * cuatro filas no se corta; si el cierre no entra, esas filas pasan
+         * con él a la página siguiente, que repite la cabecera de la tabla.
+         */
+        table.resultados {
+            page-break-before: avoid;
+        }
+
+        table.resultados tr.final {
+            page-break-before: avoid;
+        }
+
+        .cierre {
+            page-break-before: avoid;
+            page-break-inside: avoid;
+        }
+
         .pie {
-            margin: 0.55cm 0 0;
-            font-size: 9.5pt;
-            line-height: 1.4;
+            margin: 0.45cm 0 0;
+            font-size: 7.2pt;
+            line-height: 1.45;
         }
 
         .pie .resaltado {
@@ -127,10 +151,10 @@
         }
 
         .firma {
-            margin: 0.45cm 0 0;
-            font-size: 10.5pt;
+            margin: 0.35cm 0 0;
+            font-size: 8pt;
             font-weight: bold;
-            line-height: 1.4;
+            line-height: 1.45;
         }
     </style>
 </head>
@@ -146,7 +170,7 @@
                 </tr>
             </table>
 
-            <h1>{{ mb_strtoupper($proceso->nombre_pro) }}</h1>
+            <h1 class="proceso">{{ mb_strtoupper($proceso->nombre_pro) }}</h1>
             <h1>{{ mb_strtoupper($proceso->entidad_pro) }}</h1>
             @if ($proceso->regimen_pro)
                 <h1 class="regimen">{{ mb_strtoupper($proceso->regimen_pro) }}</h1>
@@ -174,7 +198,7 @@
                 </thead>
                 <tbody>
                     @foreach ($delPuesto->filas as $fila)
-                        <tr>
+                        <tr @class(['final' => $loop->remaining < 3])>
                             <td>{{ $fila->numero }}</td>
                             <td class="nombres">{{ $fila->inscripcion->apellidos_nombres_ins }}</td>
                             <td>{{ $fila->nota }}</td>
@@ -187,20 +211,22 @@
                 </tbody>
             </table>
 
-            <p class="pie">
-                Los postulantes con puntaje de evaluación técnica mayor o igual a {{ $proceso->puntajeMinimoTexto() }} puntos,
-                deben remitir día <span class="resaltado">{{ $proceso->fecha_limite_documentos_pro?->format('d/m/Y') }}</span>
-                hasta las 23:59 horas al <span class="resaltado">correo electrónico</span>
-                <strong>{{ $proceso->correo_documentos_pro }}</strong> el reporte de postulación, las imágenes del documento de
-                identidad y la documentación que sustenta los registros realizados al momento de la postulación, así como la
-                <strong>Declaración Jurada que figura como anexo único en las bases del proceso, la cual debe ser debidamente
-                llenada, suscrita y presentada.</strong>
-            </p>
+            <div class="cierre">
+                <p class="pie">
+                    Los postulantes con puntaje de evaluación técnica mayor o igual a {{ $proceso->puntajeMinimoTexto() }} puntos,
+                    deben remitir día <span class="resaltado">{{ $proceso->fecha_limite_documentos_pro?->format('d/m/Y') }}</span>
+                    hasta las 23:59 horas al <span class="resaltado">correo electrónico <strong>{{ $proceso->correo_documentos_pro }}</strong></span>
+                    el reporte de postulación, las imágenes del documento de
+                    identidad y la documentación que sustenta los registros realizados al momento de la postulación, así como la
+                    <strong>Declaración Jurada que figura como anexo único en las bases del proceso, la cual debe ser debidamente
+                    llenada, suscrita y presentada.</strong>
+                </p>
 
-            <p class="firma">
-                {{ $proceso->lugarYFechaDeResultados() }}<br>
-                El {{ $proceso->comite_pro?->etiqueta() }}
-            </p>
+                <p class="firma">
+                    {{ $proceso->lugarYFechaDeResultados() }}<br>
+                    El {{ $proceso->comite_pro?->etiqueta() }}
+                </p>
+            </div>
         </div>
     @endforeach
 </body>

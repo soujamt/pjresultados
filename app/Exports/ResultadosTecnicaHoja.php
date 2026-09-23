@@ -177,7 +177,7 @@ class ResultadosTecnicaHoja implements Export, WithDrawings, WithEvents, WithTit
             [' hasta las 23:59 horas al ', null, false],
             ['correo electrónico', self::ROJO, false],
             [' ', null, false],
-            [(string) $this->proceso->correo_documentos_pro, null, true],
+            [(string) $this->proceso->correo_documentos_pro, self::ROJO, true],
             [' el reporte de postulación, las imágenes del documento de identidad y la documentación que sustenta los registros realizados al momento de la postulación, así como la ', null, false],
             ['Declaración Jurada que figura como anexo único en las bases del proceso, la cual debe ser debidamente llenada, suscrita y presentada.', null, true],
         ];
