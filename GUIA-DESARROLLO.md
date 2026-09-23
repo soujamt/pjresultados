@@ -31,7 +31,7 @@ organización y 682 postulantes. **Esos datos no están en el repositorio** (ver
 | Backend | PHP 8.3 · Laravel 13 |
 | Interfaz | Livewire 4 (páginas de varios archivos) · Flux UI 2 (edición gratuita) · Tailwind CSS 4 · Alpine |
 | Excel | `maatwebsite/excel` 4 para exportar · `App\Services\Excel\LectorXlsx` propio para importar |
-| PDF | `barryvdh/laravel-dompdf` 3 (instalado, aún sin reportes) |
+| PDF | `barryvdh/laravel-dompdf` 3 (Anexo 07 de resultados, en Arial) |
 | Íconos | Hugeicons Free (MIT), convertidos a íconos de Flux con `php artisan pj:iconos` |
 | Tipografía | Public Sans en el sistema interno · Inter en el acceso |
 | Pruebas y calidad | Pest 4 · PHPStan (Larastan) · Pint |
@@ -150,9 +150,20 @@ PRESENTÓ» (sin hoja). Las demás (se retiró de la sala, etc.) se registran co
 postulante NO APTO con puntaje 0. El pie del anexo necesita los **Datos de la publicación** (fecha límite y
 correo para los documentos, fecha, ciudad y comité); sin ellos no se descarga nada.
 
-El PDF (`resources/views/reportes/resultados-tecnica.blade.php`, Dompdf con Helvetica) y el Excel
-(`app/Exports/ResultadosTecnicaHoja.php`, una hoja por puesto) replican el Anexo 07 oficial. El logo de los
-reportes es `public/img/pj-logo-reporte.jpg`, sin transparencia: Dompdf procesa lento los PNG con canal alfa.
+El PDF (`resources/views/reportes/resultados-tecnica.blade.php`, con Dompdf) y el Excel
+(`app/Exports/ResultadosTecnicaHoja.php`, una hoja por puesto) replican el Anexo 07 oficial, con las medidas
+del Excel guardado como PDF (márgenes amplios, tabla a 6 pt). El logo de los reportes es
+`public/img/pj-logo-reporte.jpg`, sin transparencia: Dompdf procesa lento los PNG con canal alfa.
+
+**Los dos van en Arial.** Arial es de Microsoft y no se puede redistribuir, así que no está en el repositorio:
+`app/Services/Reportes/FuenteArial.php` registra la del sistema la primera vez y Dompdf la copia a
+`storage/fonts` (fuera de git). En Windows ya está; en un servidor Linux hay que instalarla
+(`sudo apt install ttf-mscorefonts-installer`) o indicar la carpeta con `PDF_FUENTE_ARIAL`. Si no la
+encuentra, el PDF sale en Helvetica, que tiene las mismas medidas.
+
+**Saltos de página del PDF:** el párrafo final y la firma nunca quedan solos; si no entran, pasan a la
+página siguiente con las últimas cuatro filas (reglas `.cierre` y `tr.final` de la vista). El test
+«no deja la firma ni el pie solos» cubre los tamaños de puesto en los que fallaría sin esas reglas.
 
 ---
 
@@ -232,11 +243,17 @@ tests/Feature/            Pruebas por módulo; tests/Support arma Excel de prueb
 
 <x-panel>…filtros…</x-panel>
 
-<x-tabla.marco>
+<x-tabla.marco>                 {{-- «compacta» baja la letra en tablas largas --}}
     <flux:table>…</flux:table>
 </x-tabla.marco>
+
+{{-- Descargas: el ícono gira mientras se genera el archivo y los errores salen en un aviso. --}}
+<x-boton.descarga :href="route(...)" icon="xls-02" variant="primary" color="green">Excel</x-boton.descarga>
 ```
 
+- **Rendimiento:** Blaze compila los componentes de `resources/views/components` (ver `AppServiceProvider`).
+  En tablas de cien filas o más conviene HTML plano dentro de `<x-tabla.marco>` en vez de `flux:table`, y
+  abrir los modales con Alpine en lugar de ir al servidor (ver la pantalla de resultados).
 - **Cifras:** usa `tabular-nums` en DNI, códigos y totales para que se alineen en columna.
 - **Fuentes:** se descargan al compilar con el plugin de fuentes de `vite.config.js` y las sirve el propio
   servidor, sin depender de un CDN (la red de la Corte puede bloquearlos).
