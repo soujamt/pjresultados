@@ -26,12 +26,12 @@ function inscribir(Puesto $puesto, string $dni, string $nombres): Inscripcion
 }
 
 it('carga las hojas de la lectora cruzandolas por DNI con los inscritos', function () {
-    $laura = inscribir($this->puesto, '71234567', 'GARCIA DAVILA LAURA');
+    $laura = inscribir($this->puesto, '71234567', 'GALVEZ DORADO LUCIA');
     $ana = inscribir($this->puesto, '72345678', 'ACUÑA RIOS ANA');
-    inscribir($this->puesto, '73456789', 'ALIAGA SILVA MILTON');
+    inscribir($this->puesto, '73456789', 'ALARCON SIERRA MATEO');
 
     $resultado = app(ImportadorExamenes::class)->importar($this->proceso, ArchivoLectora::archivo([
-        ArchivoLectora::hoja('71234567', 'GARCÍA DÁVILA, LAURA', aciertos: 25, errores: 3, blancos: 1, dobles: 1),
+        ArchivoLectora::hoja('71234567', 'GÁLVEZ DORADO, LUCÍA', aciertos: 25, errores: 3, blancos: 1, dobles: 1),
         ArchivoLectora::hoja('72345678', 'ACUÑA RIOS, ANA', aciertos: 30),
     ]), 'lote-1.txt');
 
@@ -58,24 +58,24 @@ it('carga las hojas de la lectora cruzandolas por DNI con los inscritos', functi
             'blancos_exa' => 1,
             'dobles_exa' => 1,
             'respuestas_exa' => str_repeat('A', 25).'BBB-*',
-            'apellidos_nombres_exa' => 'GARCÍA DÁVILA, LAURA',
+            'apellidos_nombres_exa' => 'GÁLVEZ DORADO, LUCÍA',
             'nombre_coincide_exa' => true,
         ])
         ->and($ana->examen->apellidos_nombres_exa)->toBe('ACUÑA RIOS, ANA');
 });
 
 it('no carga nada si alguna hoja tiene observaciones', function () {
-    inscribir($this->puesto, '71234567', 'GARCIA DAVILA LAURA');
-    inscribir($this->puesto, '72345678', 'ALIAGA SILVA MILTON');
-    inscribir($this->puesto, '73456789', 'SERRANO CASTILLO DORIS');
+    inscribir($this->puesto, '71234567', 'GALVEZ DORADO LUCIA');
+    inscribir($this->puesto, '72345678', 'ALARCON SIERRA MATEO');
+    inscribir($this->puesto, '73456789', 'SEGURA CAMPOS DELIA');
 
     $resultado = app(ImportadorExamenes::class)->importar($this->proceso, ArchivoLectora::archivo([
-        ArchivoLectora::hoja('71234567', 'GARCIA DAVILA LAURA', aciertos: 20, errores: 10),
+        ArchivoLectora::hoja('71234567', 'GALVEZ DORADO LUCIA', aciertos: 20, errores: 10),
         ArchivoLectora::hoja('79999999', 'REVILLA PAREDES JUAN', aciertos: 18, errores: 12),
-        ArchivoLectora::hoja('71234567', 'GARCIA DAVILA LAURA', aciertos: 20, errores: 10),
-        ArchivoLectora::hoja('7234567', 'ALIAGA SILVA MILTON', aciertos: 15, errores: 15),
-        ArchivoLectora::hoja('73456789', 'SERRANO CASTILLO DORIS', aciertos: 12, errores: 18, nota: '14,00000'),
-        ArchivoLectora::hoja('72345678', 'ALIAGA SILVA MILTON', aciertos: 12, errores: 10, blancos: 0),
+        ArchivoLectora::hoja('71234567', 'GALVEZ DORADO LUCIA', aciertos: 20, errores: 10),
+        ArchivoLectora::hoja('7234567', 'ALARCON SIERRA MATEO', aciertos: 15, errores: 15),
+        ArchivoLectora::hoja('73456789', 'SEGURA CAMPOS DELIA', aciertos: 12, errores: 18, nota: '14,00000'),
+        ArchivoLectora::hoja('72345678', 'ALARCON SIERRA MATEO', aciertos: 12, errores: 10, blancos: 0),
     ]));
 
     expect($resultado->aplicada)->toBeFalse()
@@ -94,30 +94,30 @@ it('no carga nada si alguna hoja tiene observaciones', function () {
 });
 
 it('rechaza conteos que no son numeros enteros', function () {
-    inscribir($this->puesto, '71234567', 'GARCIA DAVILA LAURA');
+    inscribir($this->puesto, '71234567', 'GALVEZ DORADO LUCIA');
 
     $resultado = app(ImportadorExamenes::class)->importar($this->proceso, ArchivoLectora::archivo([
-        '71234567;GARCIA DAVILA LAURA;20,00000;20;diez;0;0;A;',
+        '71234567;GALVEZ DORADO LUCIA;20,00000;20;diez;0;0;A;',
     ]));
 
     expect($resultado->errores)->toBe(['Línea 2: «diez» en Errores no es un número entero.']);
 });
 
 it('actualiza por DNI al volver a cargar y cuenta las hojas sin cambios', function () {
-    $laura = inscribir($this->puesto, '71234567', 'GARCIA DAVILA LAURA');
-    inscribir($this->puesto, '72345678', 'ALIAGA SILVA MILTON');
-    inscribir($this->puesto, '73456789', 'SERRANO CASTILLO DORIS');
+    $laura = inscribir($this->puesto, '71234567', 'GALVEZ DORADO LUCIA');
+    inscribir($this->puesto, '72345678', 'ALARCON SIERRA MATEO');
+    inscribir($this->puesto, '73456789', 'SEGURA CAMPOS DELIA');
     $importador = app(ImportadorExamenes::class);
 
     $importador->importar($this->proceso, ArchivoLectora::archivo([
-        ArchivoLectora::hoja('71234567', 'GARCIA DAVILA LAURA', aciertos: 20, errores: 10),
-        ArchivoLectora::hoja('72345678', 'ALIAGA SILVA MILTON', aciertos: 15, errores: 15),
+        ArchivoLectora::hoja('71234567', 'GALVEZ DORADO LUCIA', aciertos: 20, errores: 10),
+        ArchivoLectora::hoja('72345678', 'ALARCON SIERRA MATEO', aciertos: 15, errores: 15),
     ]));
 
     $resultado = $importador->importar($this->proceso, ArchivoLectora::archivo([
-        ArchivoLectora::hoja('71234567', 'GARCIA DAVILA LAURA', aciertos: 22, errores: 8),
-        ArchivoLectora::hoja('72345678', 'ALIAGA SILVA MILTON', aciertos: 15, errores: 15),
-        ArchivoLectora::hoja('73456789', 'SERRANO CASTILLO DORIS', aciertos: 9, errores: 21),
+        ArchivoLectora::hoja('71234567', 'GALVEZ DORADO LUCIA', aciertos: 22, errores: 8),
+        ArchivoLectora::hoja('72345678', 'ALARCON SIERRA MATEO', aciertos: 15, errores: 15),
+        ArchivoLectora::hoja('73456789', 'SEGURA CAMPOS DELIA', aciertos: 9, errores: 21),
     ]));
 
     expect([$resultado->creados, $resultado->actualizados, $resultado->sinCambios])->toBe([1, 1, 1])
@@ -126,10 +126,10 @@ it('actualiza por DNI al volver a cargar y cuenta las hojas sin cambios', functi
 });
 
 it('carga la hoja con otro nombre pero la marca para revisarla', function () {
-    $laura = inscribir($this->puesto, '71234567', 'GARCIA DAVILA LAURA');
+    $laura = inscribir($this->puesto, '71234567', 'GALVEZ DORADO LUCIA');
 
     $resultado = app(ImportadorExamenes::class)->importar($this->proceso, ArchivoLectora::archivo([
-        ArchivoLectora::hoja('71234567', 'SERRANO CASTILLO, DORIS', aciertos: 20, errores: 10),
+        ArchivoLectora::hoja('71234567', 'SEGURA CAMPOS, DELIA', aciertos: 20, errores: 10),
     ]));
 
     expect($resultado->aplicada)->toBeTrue()
@@ -148,17 +148,17 @@ it('lee el archivo aunque ya venga en UTF-8', function () {
 });
 
 it('exige la cabecera de la lectora', function () {
-    inscribir($this->puesto, '71234567', 'GARCIA DAVILA LAURA');
+    inscribir($this->puesto, '71234567', 'GALVEZ DORADO LUCIA');
 
     app(ImportadorExamenes::class)->importar($this->proceso, ArchivoLectora::archivo(
-        ['71234567;GARCIA DAVILA LAURA;20,00000;20'],
+        ['71234567;GALVEZ DORADO LUCIA;20,00000;20'],
         'NRO DE DNI;APELLIDOS Y NOMBRES;Nota 30;Aciertos',
     ));
 })->throws(RuntimeException::class, 'faltan las columnas «Errores», «Blancos», «Dobles»');
 
 it('exige que el proceso tenga inscritos', function () {
     app(ImportadorExamenes::class)->importar($this->proceso, ArchivoLectora::archivo([
-        ArchivoLectora::hoja('71234567', 'GARCIA DAVILA LAURA', aciertos: 30),
+        ArchivoLectora::hoja('71234567', 'GALVEZ DORADO LUCIA', aciertos: 30),
     ]));
 })->throws(RuntimeException::class, 'no tiene inscritos');
 
@@ -182,21 +182,21 @@ it('carga las 700 hojas de un proceso completo con un numero fijo de consultas',
 });
 
 it('muestra la vista previa sin guardar nada y cuenta a quienes quedaran sin examen', function () {
-    inscribir($this->puesto, '71234567', 'GARCIA DAVILA LAURA');
-    inscribir($this->puesto, '72345678', 'ALIAGA SILVA MILTON');
-    inscribir($this->puesto, '73456789', 'SERRANO CASTILLO DORIS');
+    inscribir($this->puesto, '71234567', 'GALVEZ DORADO LUCIA');
+    inscribir($this->puesto, '72345678', 'ALARCON SIERRA MATEO');
+    inscribir($this->puesto, '73456789', 'SEGURA CAMPOS DELIA');
     $yaCargada = inscribir($this->puesto, '74567890', 'REVILLA PAREDES JUAN');
     Examen::factory()->create(['id_ins' => $yaCargada->id_ins]);
 
     $analisis = app(ImportadorExamenes::class)->analizar($this->proceso, ArchivoLectora::archivo([
-        ArchivoLectora::hoja('71234567', 'GARCIA DAVILA LAURA', aciertos: 18, errores: 12),
-        ArchivoLectora::hoja('72345678', 'ALIAGA SILVA MILTON', aciertos: 15, errores: 15, nota: '16,00000'),
+        ArchivoLectora::hoja('71234567', 'GALVEZ DORADO LUCIA', aciertos: 18, errores: 12),
+        ArchivoLectora::hoja('72345678', 'ALARCON SIERRA MATEO', aciertos: 15, errores: 15, nota: '16,00000'),
     ]));
 
     expect($analisis->puedeImportarse())->toBeFalse()
         ->and($analisis->errores)->toHaveCount(1)
         ->and($analisis->faltantes)->toBe([
-            ['documento' => '73456789', 'nombres' => 'SERRANO CASTILLO DORIS', 'puesto' => $this->puesto->denominacion()],
+            ['documento' => '73456789', 'nombres' => 'SEGURA CAMPOS DELIA', 'puesto' => $this->puesto->denominacion()],
         ])
         ->and($analisis->conExamen())->toBe(3)
         ->and(Examen::count())->toBe(1)

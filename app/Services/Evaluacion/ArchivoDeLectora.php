@@ -10,7 +10,7 @@ use RuntimeException;
  * linea por hoja y los campos separados por punto y coma.
  *
  *     NRO DE DNI;APELLIDOS Y NOMBRES;Nota 30;Aciertos;Errores;Blancos;Dobles;RESPUESTAS;
- *     71234567;GARCIA DAVILA, LAURA;30,00000;30;0;0;0;A;B;C;…
+ *     71234567;GALVEZ DORADO, LUCIA;30,00000;30;0;0;0;A;B;C;…
  *
  * Desde «RESPUESTAS» sigue una columna por cada pregunta de la hoja, incluidas
  * las que el examen no usa. La lectora escribe en la codificacion de Windows

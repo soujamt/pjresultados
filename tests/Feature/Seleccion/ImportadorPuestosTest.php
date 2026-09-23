@@ -13,10 +13,10 @@ use Tests\Support\ConstructorXlsx;
 it('agrupa los puestos del anexo por codigo', function () {
     $proceso = Proceso::factory()->create();
     $archivo = Anexo06A::archivo([
-        Anexo06A::fila(1, 'GARCIA DAVILA LAURA', '00312', 'ANALISTA II'),
-        Anexo06A::fila(2, 'SERRANO CASTILLO DORIS', '00312', 'ANALISTA II'),
-        Anexo06A::fila(3, 'ALIAGA SILVA MILTON', '00340-1', 'ASISTENTE JUDICIAL'),
-        Anexo06A::fila(4, 'ALVARADO DEL AGUILA ERIKA', '00340-2', 'ASISTENTE JUDICIAL'),
+        Anexo06A::fila(1, 'GALVEZ DORADO LUCIA', '00312', 'ANALISTA II'),
+        Anexo06A::fila(2, 'SEGURA CAMPOS DELIA', '00312', 'ANALISTA II'),
+        Anexo06A::fila(3, 'ALARCON SIERRA MATEO', '00340-1', 'ASISTENTE JUDICIAL'),
+        Anexo06A::fila(4, 'ALVA DEL CASTILLO ELENA', '00340-2', 'ASISTENTE JUDICIAL'),
     ]);
 
     $resultado = app(ImportadorPuestos::class)->importar($proceso, $archivo);
@@ -50,8 +50,8 @@ it('no duplica al volver a importar y actualiza el nombre que cambio', function 
     Puesto::factory()->create(['id_pro' => $proceso->id_pro, 'codigo_pue' => '00312', 'nombre_pue' => 'ANALISTA']);
 
     $archivo = Anexo06A::archivo([
-        Anexo06A::fila(1, 'GARCIA DAVILA LAURA', '00312', 'ANALISTA II'),
-        Anexo06A::fila(2, 'ALIAGA SILVA MILTON', '00301', 'ASISTENTE ADMINISTRATIVO II'),
+        Anexo06A::fila(1, 'GALVEZ DORADO LUCIA', '00312', 'ANALISTA II'),
+        Anexo06A::fila(2, 'ALARCON SIERRA MATEO', '00301', 'ASISTENTE ADMINISTRATIVO II'),
     ]);
 
     $primera = app(ImportadorPuestos::class)->importar($proceso, $archivo);
@@ -70,7 +70,7 @@ it('restaura un puesto eliminado en vez de crear otro', function () {
     $puesto->delete();
 
     app(ImportadorPuestos::class)->importar($proceso, Anexo06A::archivo([
-        Anexo06A::fila(1, 'GARCIA DAVILA LAURA', '00312', 'ANALISTA II'),
+        Anexo06A::fila(1, 'GALVEZ DORADO LUCIA', '00312', 'ANALISTA II'),
     ]));
 
     expect($puesto->fresh()->trashed())->toBeFalse()
@@ -80,9 +80,9 @@ it('restaura un puesto eliminado en vez de crear otro', function () {
 it('rechaza el archivo entero si un codigo aparece con dos nombres', function () {
     $proceso = Proceso::factory()->create();
     $archivo = Anexo06A::archivo([
-        Anexo06A::fila(1, 'GARCIA DAVILA LAURA', '00312', 'ANALISTA II'),
-        Anexo06A::fila(2, 'ALIAGA SILVA MILTON', '00301', 'ASISTENTE ADMINISTRATIVO II'),
-        Anexo06A::fila(3, 'SERRANO CASTILLO DORIS', '00312', 'REVISOR'),
+        Anexo06A::fila(1, 'GALVEZ DORADO LUCIA', '00312', 'ANALISTA II'),
+        Anexo06A::fila(2, 'ALARCON SIERRA MATEO', '00301', 'ASISTENTE ADMINISTRATIVO II'),
+        Anexo06A::fila(3, 'SEGURA CAMPOS DELIA', '00312', 'REVISOR'),
     ]);
 
     $resultado = app(ImportadorPuestos::class)->importar($proceso, $archivo);
@@ -97,9 +97,9 @@ it('registra la unidad de organizacion de cada puesto', function () {
     $proceso = Proceso::factory()->create();
 
     $resultado = app(ImportadorPuestos::class)->importar($proceso, Anexo06A::archivo([
-        Anexo06A::filaCompleta(1, '71234567', 'GARCIA DAVILA LAURA', '00340-1', 'ASISTENTE JUDICIAL', 'PRIMER JUZGADO DE TRABAJO - CALLERIA'),
-        Anexo06A::filaCompleta(2, '72345678', 'ALIAGA SILVA MILTON', '00347-1', 'TECNICO JUDICIAL', 'PRIMER JUZGADO DE TRABAJO - CALLERIA'),
-        Anexo06A::filaCompleta(3, '73456789', 'SERRANO CASTILLO DORIS', '00335-2', 'ASISTENTE EN SERVICIOS ADMINISTRATIVOS', 'MÓDULO PENAL CENTRAL'),
+        Anexo06A::filaCompleta(1, '71234567', 'GALVEZ DORADO LUCIA', '00340-1', 'ASISTENTE JUDICIAL', 'PRIMER JUZGADO DE TRABAJO - CALLERIA'),
+        Anexo06A::filaCompleta(2, '72345678', 'ALARCON SIERRA MATEO', '00347-1', 'TECNICO JUDICIAL', 'PRIMER JUZGADO DE TRABAJO - CALLERIA'),
+        Anexo06A::filaCompleta(3, '73456789', 'SEGURA CAMPOS DELIA', '00335-2', 'ASISTENTE EN SERVICIOS ADMINISTRATIVOS', 'MÓDULO PENAL CENTRAL'),
     ], Anexo06A::cabeceraCompleta()));
 
     expect($resultado->aplicada)->toBeTrue()
@@ -117,7 +117,7 @@ it('reconoce una unidad ya registrada aunque venga sin tildes', function () {
     $unidad = Unidad::factory()->create(['nombre_uni' => 'MÓDULO PENAL CENTRAL']);
 
     app(ImportadorPuestos::class)->importar($proceso, Anexo06A::archivo([
-        Anexo06A::filaCompleta(1, '71234567', 'GARCIA DAVILA LAURA', '00335-2', 'ASISTENTE EN SERVICIOS ADMINISTRATIVOS', 'modulo  penal central'),
+        Anexo06A::filaCompleta(1, '71234567', 'GALVEZ DORADO LUCIA', '00335-2', 'ASISTENTE EN SERVICIOS ADMINISTRATIVOS', 'modulo  penal central'),
     ], Anexo06A::cabeceraCompleta()));
 
     expect(Unidad::count())->toBe(1)
@@ -128,8 +128,8 @@ it('rechaza un codigo que aparece en dos unidades', function () {
     $proceso = Proceso::factory()->create();
 
     $resultado = app(ImportadorPuestos::class)->importar($proceso, Anexo06A::archivo([
-        Anexo06A::filaCompleta(1, '71234567', 'GARCIA DAVILA LAURA', '00340-1', 'ASISTENTE JUDICIAL', 'SALA CIVIL - CALLERIA'),
-        Anexo06A::filaCompleta(2, '72345678', 'ALIAGA SILVA MILTON', '00340-1', 'ASISTENTE JUDICIAL', 'MÓDULO PENAL CENTRAL'),
+        Anexo06A::filaCompleta(1, '71234567', 'GALVEZ DORADO LUCIA', '00340-1', 'ASISTENTE JUDICIAL', 'SALA CIVIL - CALLERIA'),
+        Anexo06A::filaCompleta(2, '72345678', 'ALARCON SIERRA MATEO', '00340-1', 'ASISTENTE JUDICIAL', 'MÓDULO PENAL CENTRAL'),
     ], Anexo06A::cabeceraCompleta()));
 
     expect($resultado->aplicada)->toBeFalse()
@@ -145,7 +145,7 @@ it('no borra la unidad de un puesto cuando el archivo no trae esa columna', func
     Puesto::factory()->create(['id_pro' => $proceso->id_pro, 'id_uni' => $unidad->id_uni, 'codigo_pue' => '00312', 'nombre_pue' => 'ANALISTA II']);
 
     $resultado = app(ImportadorPuestos::class)->importar($proceso, Anexo06A::archivo([
-        Anexo06A::fila(1, 'GARCIA DAVILA LAURA', '00312', 'ANALISTA II'),
+        Anexo06A::fila(1, 'GALVEZ DORADO LUCIA', '00312', 'ANALISTA II'),
     ]));
 
     expect($resultado->sinCambios)->toBe(1)
@@ -158,7 +158,7 @@ it('registra cada carga en la bitacora con su usuario', function () {
 
     app(ImportadorPuestos::class)->importar(
         $proceso,
-        Anexo06A::archivo([Anexo06A::fila(1, 'GARCIA DAVILA LAURA', '00312', 'ANALISTA II')]),
+        Anexo06A::archivo([Anexo06A::fila(1, 'GALVEZ DORADO LUCIA', '00312', 'ANALISTA II')]),
         'Anexo 06-A.xlsx',
         $usuario,
     );

@@ -54,8 +54,8 @@ it('lista los puestos del proceso con sus inscritos', function () {
 it('importa los puestos subiendo el anexo desde la pantalla', function () {
     $proceso = Proceso::factory()->create();
     $archivo = UploadedFile::fake()->createWithContent('Anexo 06-A.xlsx', file_get_contents(Anexo06A::archivo([
-        Anexo06A::fila(1, 'GARCIA DAVILA LAURA', '00312', 'ANALISTA II'),
-        Anexo06A::fila(2, 'ALIAGA SILVA MILTON', '00301', 'ASISTENTE ADMINISTRATIVO II'),
+        Anexo06A::fila(1, 'GALVEZ DORADO LUCIA', '00312', 'ANALISTA II'),
+        Anexo06A::fila(2, 'ALARCON SIERRA MATEO', '00301', 'ASISTENTE ADMINISTRATIVO II'),
     ])));
 
     Livewire::actingAs(Usuario::factory()->superAdministrador()->create())
@@ -72,7 +72,7 @@ it('importa los puestos subiendo el anexo desde la pantalla', function () {
 it('muestra por que no se pudieron importar las inscripciones', function () {
     $puesto = Puesto::factory()->create(['codigo_pue' => '00312']);
     $archivo = UploadedFile::fake()->createWithContent('Anexo 06-A.xlsx', file_get_contents(Anexo06A::archivo([
-        Anexo06A::fila(1, 'GARCIA DAVILA LAURA', '00312', 'ANALISTA II'),
+        Anexo06A::fila(1, 'GALVEZ DORADO LUCIA', '00312', 'ANALISTA II'),
     ])));
 
     $componente = Livewire::actingAs(Usuario::factory()->superAdministrador()->create())
@@ -119,8 +119,8 @@ it('agrupa los puestos y filtra las inscripciones por unidad de organizacion', f
     $modulo = Unidad::factory()->create(['nombre_uni' => 'MÓDULO PENAL CENTRAL']);
     $deLaSala = Puesto::factory()->create(['id_pro' => $proceso->id_pro, 'id_uni' => $sala->id_uni, 'codigo_pue' => '00340-3']);
     $delModulo = Puesto::factory()->create(['id_pro' => $proceso->id_pro, 'id_uni' => $modulo->id_uni, 'codigo_pue' => '00335-2']);
-    Inscripcion::factory()->create(['id_pue' => $deLaSala->id_pue, 'apellidos_nombres_ins' => 'GARCIA DAVILA LAURA']);
-    Inscripcion::factory()->create(['id_pue' => $delModulo->id_pue, 'apellidos_nombres_ins' => 'ALIAGA SILVA MILTON']);
+    Inscripcion::factory()->create(['id_pue' => $deLaSala->id_pue, 'apellidos_nombres_ins' => 'GALVEZ DORADO LUCIA']);
+    Inscripcion::factory()->create(['id_pue' => $delModulo->id_pue, 'apellidos_nombres_ins' => 'ALARCON SIERRA MATEO']);
     $admin = Usuario::factory()->superAdministrador()->create();
 
     Livewire::actingAs($admin)
@@ -133,8 +133,8 @@ it('agrupa los puestos y filtra las inscripciones por unidad de organizacion', f
     Livewire::actingAs($admin)
         ->test('pages::seleccion.inscripciones', ['codigoProceso' => $proceso->codigo_pro])
         ->set('filtroUnidad', (string) $modulo->id_uni)
-        ->assertSee('ALIAGA SILVA MILTON')
-        ->assertDontSee('GARCIA DAVILA LAURA');
+        ->assertSee('ALARCON SIERRA MATEO')
+        ->assertDontSee('GALVEZ DORADO LUCIA');
 
     Livewire::actingAs($admin)
         ->test('pages::seleccion.unidades', ['codigoProceso' => $proceso->codigo_pro])
@@ -154,24 +154,24 @@ it('no elimina una unidad que tiene puestos', function () {
 
 it('filtra las inscripciones por DNI o nombre', function () {
     $puesto = Puesto::factory()->create();
-    Inscripcion::factory()->create(['id_pue' => $puesto->id_pue, 'documento_ins' => '71234567', 'apellidos_nombres_ins' => 'GARCIA DAVILA LAURA']);
-    Inscripcion::factory()->create(['id_pue' => $puesto->id_pue, 'documento_ins' => '72345678', 'apellidos_nombres_ins' => 'ALIAGA SILVA MILTON']);
+    Inscripcion::factory()->create(['id_pue' => $puesto->id_pue, 'documento_ins' => '71234567', 'apellidos_nombres_ins' => 'GALVEZ DORADO LUCIA']);
+    Inscripcion::factory()->create(['id_pue' => $puesto->id_pue, 'documento_ins' => '72345678', 'apellidos_nombres_ins' => 'ALARCON SIERRA MATEO']);
 
     Livewire::actingAs(Usuario::factory()->superAdministrador()->create())
         ->test('pages::seleccion.inscripciones', ['codigoProceso' => $puesto->proceso->codigo_pro])
-        ->set('busqueda', 'garcia')
-        ->assertSee('GARCIA DAVILA LAURA')
-        ->assertDontSee('ALIAGA SILVA MILTON')
+        ->set('busqueda', 'galvez')
+        ->assertSee('GALVEZ DORADO LUCIA')
+        ->assertDontSee('ALARCON SIERRA MATEO')
         ->set('busqueda', '7234')
-        ->assertSee('ALIAGA SILVA MILTON')
-        ->assertDontSee('GARCIA DAVILA LAURA');
+        ->assertSee('ALARCON SIERRA MATEO')
+        ->assertDontSee('GALVEZ DORADO LUCIA');
 });
 
 it('muestra la vista previa del archivo y lo importa al confirmar', function () {
-    $inscripcion = Inscripcion::factory()->create(['documento_ins' => '71234567', 'apellidos_nombres_ins' => 'GARCIA DAVILA LAURA']);
-    Inscripcion::factory()->create(['id_pue' => $inscripcion->id_pue, 'documento_ins' => '72345678', 'apellidos_nombres_ins' => 'ALIAGA SILVA MILTON']);
+    $inscripcion = Inscripcion::factory()->create(['documento_ins' => '71234567', 'apellidos_nombres_ins' => 'GALVEZ DORADO LUCIA']);
+    Inscripcion::factory()->create(['id_pue' => $inscripcion->id_pue, 'documento_ins' => '72345678', 'apellidos_nombres_ins' => 'ALARCON SIERRA MATEO']);
     $archivo = UploadedFile::fake()->createWithContent('lote-1.txt', file_get_contents(ArchivoLectora::archivo([
-        ArchivoLectora::hoja('71234567', 'GARCIA DAVILA, LAURA', aciertos: 27, errores: 3),
+        ArchivoLectora::hoja('71234567', 'GALVEZ DORADO, LUCIA', aciertos: 27, errores: 3),
     ])));
 
     $pantalla = Livewire::actingAs(Usuario::factory()->superAdministrador()->create())
@@ -180,7 +180,7 @@ it('muestra la vista previa del archivo y lo importa al confirmar', function () 
         ->set('archivo', $archivo)
         ->assertSet('vistaPrevia.importable', true)
         ->assertSet('vistaPrevia.total_faltantes', 1)
-        ->assertSee(['Quedarán sin examen', 'ALIAGA SILVA MILTON', 'Importar 1 hoja(s)']);
+        ->assertSee(['Quedarán sin examen', 'ALARCON SIERRA MATEO', 'Importar 1 hoja(s)']);
 
     expect(Examen::count())->toBe(0);
 
@@ -221,25 +221,25 @@ it('explica que el archivo subido no es el de la lectora', function () {
 it('filtra a los inscritos por la situacion de su hoja', function () {
     $puesto = Puesto::factory()->create();
     $conExamen = Examen::factory()->create([
-        'id_ins' => Inscripcion::factory()->create(['id_pue' => $puesto->id_pue, 'apellidos_nombres_ins' => 'GARCIA DAVILA LAURA']),
+        'id_ins' => Inscripcion::factory()->create(['id_pue' => $puesto->id_pue, 'apellidos_nombres_ins' => 'GALVEZ DORADO LUCIA']),
     ]);
     Examen::factory()->conOtroNombre('REVILLA PAREDES JUAN')->create([
-        'id_ins' => Inscripcion::factory()->create(['id_pue' => $puesto->id_pue, 'apellidos_nombres_ins' => 'ALIAGA SILVA MILTON']),
+        'id_ins' => Inscripcion::factory()->create(['id_pue' => $puesto->id_pue, 'apellidos_nombres_ins' => 'ALARCON SIERRA MATEO']),
     ]);
-    Inscripcion::factory()->create(['id_pue' => $puesto->id_pue, 'apellidos_nombres_ins' => 'SERRANO CASTILLO DORIS']);
+    Inscripcion::factory()->create(['id_pue' => $puesto->id_pue, 'apellidos_nombres_ins' => 'SEGURA CAMPOS DELIA']);
 
     Livewire::actingAs(Usuario::factory()->superAdministrador()->create())
         ->test('pages::evaluacion.examenes', ['codigoProceso' => $puesto->proceso->codigo_pro])
         ->assertViewHas('resumen', ['inscritos' => 3, 'con_examen' => 2, 'sin_examen' => 1, 'nombre_distinto' => 1])
         ->call('filtrarPorEstado', ExamenService::SIN_EXAMEN)
-        ->assertSee('SERRANO CASTILLO DORIS')
-        ->assertDontSee('GARCIA DAVILA LAURA')
+        ->assertSee('SEGURA CAMPOS DELIA')
+        ->assertDontSee('GALVEZ DORADO LUCIA')
         ->call('filtrarPorEstado', ExamenService::NOMBRE_DISTINTO)
         ->assertSee('En la hoja: REVILLA PAREDES JUAN')
-        ->assertDontSee('SERRANO CASTILLO DORIS')
+        ->assertDontSee('SEGURA CAMPOS DELIA')
         ->call('filtrarPorEstado', ExamenService::CON_EXAMEN)
-        ->assertSee(['GARCIA DAVILA LAURA', 'ALIAGA SILVA MILTON'])
-        ->assertDontSee('SERRANO CASTILLO DORIS')
+        ->assertSee(['GALVEZ DORADO LUCIA', 'ALARCON SIERRA MATEO'])
+        ->assertDontSee('SEGURA CAMPOS DELIA')
         ->call('verHoja', $conExamen->id_exa)
         ->assertSee('Respuestas marcadas');
 });

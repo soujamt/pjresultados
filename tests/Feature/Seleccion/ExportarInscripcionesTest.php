@@ -29,8 +29,8 @@ beforeEach(function () {
 
 it('descarga el DNI y los apellidos y nombres para la lectora', function () {
     $puesto = Puesto::factory()->create(['id_pro' => $this->proceso->id_pro]);
-    Inscripcion::factory()->create(['id_pue' => $puesto->id_pue, 'numero_ins' => 2, 'documento_ins' => '71234567', 'apellidos_nombres_ins' => 'SERRANO CASTILLO DORIS']);
-    Inscripcion::factory()->create(['id_pue' => $puesto->id_pue, 'numero_ins' => 1, 'documento_ins' => '01234567', 'apellidos_nombres_ins' => 'BRICEÑO PAIMA LESLIE']);
+    Inscripcion::factory()->create(['id_pue' => $puesto->id_pue, 'numero_ins' => 2, 'documento_ins' => '71234567', 'apellidos_nombres_ins' => 'SEGURA CAMPOS DELIA']);
+    Inscripcion::factory()->create(['id_pue' => $puesto->id_pue, 'numero_ins' => 1, 'documento_ins' => '01234567', 'apellidos_nombres_ins' => 'BRAVO PEÑA LIDIA']);
 
     $respuesta = $this->actingAs($this->admin)
         ->get(route('seleccion.inscripciones.excel', ['proceso' => '002-2026-UE-UCAYALI']))
@@ -38,8 +38,8 @@ it('descarga el DNI y los apellidos y nombres para la lectora', function () {
         ->assertDownload('postulantes-002-2026-ue-ucayali.xlsx');
 
     expect(filasDelExcel($respuesta))->toBe([
-        ['DNI' => '01234567', 'APELLIDOS Y NOMBRES' => 'BRICEÑO PAIMA LESLIE'],
-        ['DNI' => '71234567', 'APELLIDOS Y NOMBRES' => 'SERRANO CASTILLO DORIS'],
+        ['DNI' => '01234567', 'APELLIDOS Y NOMBRES' => 'BRAVO PEÑA LIDIA'],
+        ['DNI' => '71234567', 'APELLIDOS Y NOMBRES' => 'SEGURA CAMPOS DELIA'],
     ]);
 });
 

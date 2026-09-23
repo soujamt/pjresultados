@@ -14,7 +14,7 @@ beforeEach(function () {
 
 it('exige la columna del DNI', function () {
     $archivo = Anexo06A::archivo([
-        Anexo06A::fila(1, 'GARCIA DAVILA LAURA', '00340-1', 'ASISTENTE JUDICIAL'),
+        Anexo06A::fila(1, 'GALVEZ DORADO LUCIA', '00340-1', 'ASISTENTE JUDICIAL'),
     ]);
 
     app(ImportadorInscripciones::class)->importar($this->proceso, $archivo);
@@ -22,8 +22,8 @@ it('exige la columna del DNI', function () {
 
 it('inscribe a los postulantes en su puesto', function () {
     $archivo = Anexo06A::archivo([
-        Anexo06A::filaConDni(1, '71234567', 'garcia davila laura', '00340-1'),
-        Anexo06A::filaConDni(2, '1234567', 'SERRANO CASTILLO DORIS', '00340_1'),
+        Anexo06A::filaConDni(1, '71234567', 'galvez dorado lucia', '00340-1'),
+        Anexo06A::filaConDni(2, '1234567', 'SEGURA CAMPOS DELIA', '00340_1'),
     ], Anexo06A::cabeceraConDni());
 
     $resultado = app(ImportadorInscripciones::class)->importar($this->proceso, $archivo);
@@ -32,8 +32,8 @@ it('inscribe a los postulantes en su puesto', function () {
         ->and($resultado->creados)->toBe(2)
         ->and(Inscripcion::orderBy('numero_ins')->get(['documento_ins', 'apellidos_nombres_ins', 'id_pue'])->toArray())
         ->toBe([
-            ['documento_ins' => '71234567', 'apellidos_nombres_ins' => 'GARCIA DAVILA LAURA', 'id_pue' => $this->puesto->id_pue],
-            ['documento_ins' => '01234567', 'apellidos_nombres_ins' => 'SERRANO CASTILLO DORIS', 'id_pue' => $this->puesto->id_pue],
+            ['documento_ins' => '71234567', 'apellidos_nombres_ins' => 'GALVEZ DORADO LUCIA', 'id_pue' => $this->puesto->id_pue],
+            ['documento_ins' => '01234567', 'apellidos_nombres_ins' => 'SEGURA CAMPOS DELIA', 'id_pue' => $this->puesto->id_pue],
         ]);
 });
 
@@ -42,12 +42,12 @@ it('actualiza por DNI al volver a importar', function () {
     $importador = app(ImportadorInscripciones::class);
 
     $importador->importar($this->proceso, Anexo06A::archivo([
-        Anexo06A::filaConDni(1, '71234567', 'GARCIA DAVILA LAURA', '00340-1'),
+        Anexo06A::filaConDni(1, '71234567', 'GALVEZ DORADO LUCIA', '00340-1'),
     ], Anexo06A::cabeceraConDni()));
 
     $resultado = $importador->importar($this->proceso, Anexo06A::archivo([
-        Anexo06A::filaConDni(1, '71234567', 'GARCIA DAVILA LAURA', '00301', 'ASISTENTE ADMINISTRATIVO II'),
-        Anexo06A::filaConDni(2, '72345678', 'ALIAGA SILVA MILTON', '00340-1'),
+        Anexo06A::filaConDni(1, '71234567', 'GALVEZ DORADO LUCIA', '00301', 'ASISTENTE ADMINISTRATIVO II'),
+        Anexo06A::filaConDni(2, '72345678', 'ALARCON SIERRA MATEO', '00340-1'),
     ], Anexo06A::cabeceraConDni()));
 
     expect($resultado->creados)->toBe(1)
@@ -58,9 +58,9 @@ it('actualiza por DNI al volver a importar', function () {
 
 it('no guarda nada si alguna fila tiene observaciones', function () {
     $archivo = Anexo06A::archivo([
-        Anexo06A::filaConDni(1, '71234567', 'GARCIA DAVILA LAURA', '00340-1'),
-        Anexo06A::filaConDni(2, '71234567', 'SERRANO CASTILLO DORIS', '00340-1'),
-        Anexo06A::filaConDni(3, '72345678', 'ALIAGA SILVA MILTON', '00340-1', 'REVISOR'),
+        Anexo06A::filaConDni(1, '71234567', 'GALVEZ DORADO LUCIA', '00340-1'),
+        Anexo06A::filaConDni(2, '71234567', 'SEGURA CAMPOS DELIA', '00340-1'),
+        Anexo06A::filaConDni(3, '72345678', 'ALARCON SIERRA MATEO', '00340-1', 'REVISOR'),
         Anexo06A::filaConDni(4, '12AB', 'REVILLA PAREDES JUAN', '00340-1'),
     ], Anexo06A::cabeceraConDni());
 
@@ -76,7 +76,7 @@ it('no guarda nada si alguna fila tiene observaciones', function () {
 
 it('rechaza un puesto que no existe si el archivo no trae su nombre', function () {
     $archivo = Anexo06A::archivo([
-        ['1', '71234567', 'GARCIA DAVILA LAURA', '99999'],
+        ['1', '71234567', 'GALVEZ DORADO LUCIA', '99999'],
     ], ['Nº', 'DNI', 'APELLIDOS Y NOMBRES', 'CÓDIGO DE PUESTO']);
 
     $resultado = app(ImportadorInscripciones::class)->importar($this->proceso, $archivo);
@@ -87,9 +87,9 @@ it('rechaza un puesto que no existe si el archivo no trae su nombre', function (
 
 it('carga el listado completo con DNI y unidad en una sola importacion', function () {
     $archivo = Anexo06A::archivo([
-        Anexo06A::filaCompleta(1, '71234567', 'GARCIA DAVILA LAURA', '00340-1', 'ASISTENTE JUDICIAL', 'PRIMER JUZGADO DE TRABAJO - CALLERIA'),
-        Anexo06A::filaCompleta(2, '72345678', 'ALIAGA SILVA MILTON', '00413', 'ASISTENTE EN SERVICIOS DE COMUNICACIONES', 'MÓDULO PENAL DE CONTAMANA'),
-        Anexo06A::filaCompleta(3, '73456789', 'SERRANO CASTILLO DORIS', '00413', 'ASISTENTE EN SERVICIOS DE COMUNICACIONES', 'MÓDULO PENAL DE CONTAMANA'),
+        Anexo06A::filaCompleta(1, '71234567', 'GALVEZ DORADO LUCIA', '00340-1', 'ASISTENTE JUDICIAL', 'PRIMER JUZGADO DE TRABAJO - CALLERIA'),
+        Anexo06A::filaCompleta(2, '72345678', 'ALARCON SIERRA MATEO', '00413', 'ASISTENTE EN SERVICIOS DE COMUNICACIONES', 'MÓDULO PENAL DE CONTAMANA'),
+        Anexo06A::filaCompleta(3, '73456789', 'SEGURA CAMPOS DELIA', '00413', 'ASISTENTE EN SERVICIOS DE COMUNICACIONES', 'MÓDULO PENAL DE CONTAMANA'),
     ], Anexo06A::cabeceraCompleta());
 
     $resultado = app(ImportadorInscripciones::class)->importar($this->proceso, $archivo);
@@ -108,7 +108,7 @@ it('no inscribe en un puesto deshabilitado', function () {
     $this->puesto->alternarEstado();
 
     $resultado = app(ImportadorInscripciones::class)->importar($this->proceso, Anexo06A::archivo([
-        Anexo06A::filaConDni(1, '71234567', 'GARCIA DAVILA LAURA', '00340-1'),
+        Anexo06A::filaConDni(1, '71234567', 'GALVEZ DORADO LUCIA', '00340-1'),
     ], Anexo06A::cabeceraConDni()));
 
     expect($resultado->aplicada)->toBeFalse()
@@ -117,6 +117,6 @@ it('no inscribe en un puesto deshabilitado', function () {
 
 it('pide cargar los puestos si el archivo no trae sus nombres', function () {
     app(ImportadorInscripciones::class)->importar(Proceso::factory()->create(), Anexo06A::archivo([
-        ['1', '71234567', 'GARCIA DAVILA LAURA', '00340-1'],
+        ['1', '71234567', 'GALVEZ DORADO LUCIA', '00340-1'],
     ], ['Nº', 'DNI', 'APELLIDOS Y NOMBRES', 'CÓDIGO DE PUESTO']));
 })->throws(RuntimeException::class, 'no tiene puestos');
