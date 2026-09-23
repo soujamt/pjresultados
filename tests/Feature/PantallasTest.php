@@ -1,15 +1,18 @@
 <?php
 
 use App\Enums\Permiso;
+use App\Models\Examen;
 use App\Models\Inscripcion;
 use App\Models\Proceso;
 use App\Models\Puesto;
 use App\Models\Rol;
 use App\Models\Unidad;
 use App\Models\Usuario;
+use App\Services\Evaluacion\ExamenService;
 use Illuminate\Http\UploadedFile;
 use Livewire\Livewire;
 use Tests\Support\Anexo06A;
+use Tests\Support\ArchivoLectora;
 
 dataset('pantallas', [
     'inicio' => ['inicio', null],
@@ -162,4 +165,109 @@ it('filtra las inscripciones por DNI o nombre', function () {
         ->set('busqueda', '7234')
         ->assertSee('ALIAGA SILVA MILTON')
         ->assertDontSee('GARCIA DAVILA LAURA');
+});
+
+it('muestra la vista previa del archivo y lo importa al confirmar', function () {
+    $inscripcion = Inscripcion::factory()->create(['documento_ins' => '71234567', 'apellidos_nombres_ins' => 'GARCIA DAVILA LAURA']);
+    Inscripcion::factory()->create(['id_pue' => $inscripcion->id_pue, 'documento_ins' => '72345678', 'apellidos_nombres_ins' => 'ALIAGA SILVA MILTON']);
+    $archivo = UploadedFile::fake()->createWithContent('lote-1.txt', file_get_contents(ArchivoLectora::archivo([
+        ArchivoLectora::hoja('71234567', 'GARCIA DAVILA, LAURA', aciertos: 27, errores: 3),
+    ])));
+
+    $pantalla = Livewire::actingAs(Usuario::factory()->superAdministrador()->create())
+        ->test('pages::evaluacion.examenes', ['codigoProceso' => $inscripcion->proceso->codigo_pro])
+        ->call('abrirImportacion')
+        ->set('archivo', $archivo)
+        ->assertSet('vistaPrevia.importable', true)
+        ->assertSet('vistaPrevia.total_faltantes', 1)
+        ->assertSee(['Quedarán sin examen', 'ALIAGA SILVA MILTON', 'Importar 1 hoja(s)']);
+
+    expect(Examen::count())->toBe(0);
+
+    $pantalla->call('importar')
+        ->assertHasNoErrors()
+        ->assertSee('Ya tienen examen 1 de 2 inscritos.')
+        ->assertViewHas('resumen', ['inscritos' => 2, 'con_examen' => 1, 'sin_examen' => 1, 'nombre_distinto' => 0]);
+
+    expect($inscripcion->examen->aciertos_exa)->toBe(27);
+});
+
+it('no deja confirmar un archivo con observaciones', function () {
+    $inscripcion = Inscripcion::factory()->create(['documento_ins' => '71234567']);
+    $archivo = UploadedFile::fake()->createWithContent('lote-1.txt', file_get_contents(ArchivoLectora::archivo([
+        ArchivoLectora::hoja('79999999', 'REVILLA PAREDES JUAN', aciertos: 20, errores: 10),
+    ])));
+
+    Livewire::actingAs(Usuario::factory()->superAdministrador()->create())
+        ->test('pages::evaluacion.examenes', ['codigoProceso' => $inscripcion->proceso->codigo_pro])
+        ->set('archivo', $archivo)
+        ->assertSet('vistaPrevia.importable', false)
+        ->assertSee(['No se puede importar: 1 observación(es)', 'el DNI 79999999 no está inscrito']);
+});
+
+it('explica que el archivo subido no es el de la lectora', function () {
+    $inscripcion = Inscripcion::factory()->create();
+
+    $componente = Livewire::actingAs(Usuario::factory()->superAdministrador()->create())
+        ->test('pages::evaluacion.examenes', ['codigoProceso' => $inscripcion->proceso->codigo_pro])
+        ->set('archivo', UploadedFile::fake()->createWithContent('lote-1.txt', file_get_contents(Anexo06A::archivo([]))))
+        ->assertHasErrors('archivo')
+        ->assertSet('vistaPrevia', null);
+
+    expect($componente->errors()->first('archivo'))->toContain('no tiene la cabecera de la lectora óptica')
+        ->and(Examen::count())->toBe(0);
+});
+
+it('filtra a los inscritos por la situacion de su hoja', function () {
+    $puesto = Puesto::factory()->create();
+    $conExamen = Examen::factory()->create([
+        'id_ins' => Inscripcion::factory()->create(['id_pue' => $puesto->id_pue, 'apellidos_nombres_ins' => 'GARCIA DAVILA LAURA']),
+    ]);
+    Examen::factory()->conOtroNombre('REVILLA PAREDES JUAN')->create([
+        'id_ins' => Inscripcion::factory()->create(['id_pue' => $puesto->id_pue, 'apellidos_nombres_ins' => 'ALIAGA SILVA MILTON']),
+    ]);
+    Inscripcion::factory()->create(['id_pue' => $puesto->id_pue, 'apellidos_nombres_ins' => 'SERRANO CASTILLO DORIS']);
+
+    Livewire::actingAs(Usuario::factory()->superAdministrador()->create())
+        ->test('pages::evaluacion.examenes', ['codigoProceso' => $puesto->proceso->codigo_pro])
+        ->assertViewHas('resumen', ['inscritos' => 3, 'con_examen' => 2, 'sin_examen' => 1, 'nombre_distinto' => 1])
+        ->call('filtrarPorEstado', ExamenService::SIN_EXAMEN)
+        ->assertSee('SERRANO CASTILLO DORIS')
+        ->assertDontSee('GARCIA DAVILA LAURA')
+        ->call('filtrarPorEstado', ExamenService::NOMBRE_DISTINTO)
+        ->assertSee('En la hoja: REVILLA PAREDES JUAN')
+        ->assertDontSee('SERRANO CASTILLO DORIS')
+        ->call('filtrarPorEstado', ExamenService::CON_EXAMEN)
+        ->assertSee(['GARCIA DAVILA LAURA', 'ALIAGA SILVA MILTON'])
+        ->assertDontSee('SERRANO CASTILLO DORIS')
+        ->call('verHoja', $conExamen->id_exa)
+        ->assertSee('Respuestas marcadas');
+});
+
+it('vacia los examenes del proceso solo con el permiso', function () {
+    $examen = Examen::factory()->create();
+    $codigo = $examen->inscripcion->proceso->codigo_pro;
+
+    Livewire::actingAs(Usuario::factory()->create(['id_rol' => Rol::factory()->con([Permiso::ExamenesVer, Permiso::ExamenesImportar])]))
+        ->test('pages::evaluacion.examenes', ['codigoProceso' => $codigo])
+        ->call('vaciar')
+        ->assertForbidden();
+
+    expect(Examen::count())->toBe(1);
+
+    Livewire::actingAs(Usuario::factory()->superAdministrador()->create())
+        ->test('pages::evaluacion.examenes', ['codigoProceso' => $codigo])
+        ->call('vaciar');
+
+    expect(Examen::count())->toBe(0);
+});
+
+it('no elimina la inscripcion de quien ya tiene su examen', function () {
+    $examen = Examen::factory()->create();
+
+    Livewire::actingAs(Usuario::factory()->superAdministrador()->create())
+        ->test('pages::seleccion.inscripciones', ['codigoProceso' => $examen->inscripcion->proceso->codigo_pro])
+        ->call('eliminar', $examen->id_ins);
+
+    expect(Inscripcion::find($examen->id_ins))->not->toBeNull();
 });

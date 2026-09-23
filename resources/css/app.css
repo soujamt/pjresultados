@@ -59,6 +59,11 @@
     box-shadow: var(--sombra-borde);
 }
 
+/* La misma superficie, un punto más marcada, para lo que se puede pulsar. */
+@utility sombra-borde-hover {
+    box-shadow: var(--sombra-borde-hover);
+}
+
 /*
  * Fondo de los modales y flyouts de Flux. Sin esto usan el ::backdrop por
  * defecto del navegador, que es un gris translúcido apenas perceptible.

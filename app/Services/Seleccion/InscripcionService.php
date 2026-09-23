@@ -5,6 +5,7 @@ namespace App\Services\Seleccion;
 use App\Models\Inscripcion;
 use App\Models\Puesto;
 use Illuminate\Database\Eloquent\Builder;
+use RuntimeException;
 
 class InscripcionService
 {
@@ -40,8 +41,18 @@ class InscripcionService
             ->orderBy('apellidos_nombres_ins');
     }
 
+    /**
+     * @throws RuntimeException si el postulante ya tiene su hoja de examen: se
+     *                          perderia su calificacion.
+     */
     public function eliminar(Inscripcion $inscripcion): void
     {
+        if ($inscripcion->examen()->exists()) {
+            throw new RuntimeException(
+                "{$inscripcion->apellidos_nombres_ins} ya tiene su examen cargado. Vacía los exámenes del proceso antes de eliminar su inscripción."
+            );
+        }
+
         $inscripcion->delete();
     }
 }

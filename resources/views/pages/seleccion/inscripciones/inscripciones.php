@@ -139,7 +139,13 @@ class extends Component
     {
         $this->authorize(Permiso::InscripcionesEliminar->value);
 
-        $servicio->eliminar(Inscripcion::findOrFail($id));
+        try {
+            $servicio->eliminar(Inscripcion::findOrFail($id));
+        } catch (RuntimeException $error) {
+            Flux::toast(text: $error->getMessage(), variant: 'danger');
+
+            return;
+        }
 
         Flux::toast(text: 'La inscripción fue eliminada.', variant: 'success');
     }

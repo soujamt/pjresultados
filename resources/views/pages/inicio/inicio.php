@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Examen;
 use App\Models\Inscripcion;
 use App\Models\Puesto;
 use App\Models\Unidad;
@@ -25,6 +26,7 @@ class extends Component
                 ? Unidad::query()->whereHas('puestos', fn ($consulta) => $consulta->where('id_pro', $proceso->id_pro))->count()
                 : 0,
             'inscritos' => $proceso ? Inscripcion::query()->delProceso($proceso->id_pro)->count() : 0,
+            'examenes' => $proceso ? Examen::query()->delProceso($proceso->id_pro)->count() : 0,
         ];
     }
 };

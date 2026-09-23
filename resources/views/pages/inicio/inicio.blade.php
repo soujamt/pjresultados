@@ -30,11 +30,12 @@
             </div>
         </x-panel>
 
-        <div class="grid gap-4 sm:grid-cols-3">
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             @foreach ([
                 ['Unidades de organización', $unidades, 'building-03', 'seleccion.unidades', App\Enums\Permiso::UnidadesVer],
                 ['Puestos convocados', $puestos, 'briefcase-01', 'seleccion.puestos', App\Enums\Permiso::PuestosVer],
                 ['Postulantes inscritos', $inscritos, 'user-list', 'seleccion.inscripciones', App\Enums\Permiso::InscripcionesVer],
+                ['Exámenes cargados', $examenes, 'file-upload', 'evaluacion.examenes', App\Enums\Permiso::ExamenesVer],
             ] as [$etiqueta, $valor, $icono, $ruta, $permiso])
                 <x-panel class="flex flex-col">
                     <div class="flex items-center justify-between gap-3">
