@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property-read Proceso $proceso
  * @property-read Puesto $puesto
  * @property-read ?Examen $examen
+ * @property-read ?Descalificacion $descalificacion
  */
 class Inscripcion extends Model
 {
@@ -73,6 +74,14 @@ class Inscripcion extends Model
     public function examen(): HasOne
     {
         return $this->hasOne(Examen::class, 'id_ins', 'id_ins');
+    }
+
+    /**
+     * @return HasOne<Descalificacion, $this>
+     */
+    public function descalificacion(): HasOne
+    {
+        return $this->hasOne(Descalificacion::class, 'id_ins', 'id_ins');
     }
 
     /**

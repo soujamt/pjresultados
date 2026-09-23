@@ -53,6 +53,12 @@ class InscripcionService
             );
         }
 
+        if ($inscripcion->descalificacion()->exists()) {
+            throw new RuntimeException(
+                "{$inscripcion->apellidos_nombres_ins} tiene una descalificación registrada. Quítala en Resultados antes de eliminar su inscripción."
+            );
+        }
+
         $inscripcion->delete();
     }
 }

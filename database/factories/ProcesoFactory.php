@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\ComiteSeleccion;
 use App\Enums\EstadoRegistro;
 use App\Models\Proceso;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -30,5 +31,18 @@ class ProcesoFactory extends Factory
             'lugar_evaluacion_pro' => 'Pucallpa',
             'estado_pro' => EstadoRegistro::Habilitado,
         ];
+    }
+
+    /**
+     * Con los datos del pie del Anexo 07: ya se pueden descargar los resultados.
+     */
+    public function conPublicacion(): static
+    {
+        return $this->state(fn () => [
+            'fecha_limite_documentos_pro' => '2026-09-28',
+            'correo_documentos_pro' => 'convocatorias@ejemplo.gob.pe',
+            'fecha_resultados_pro' => '2026-09-27',
+            'comite_pro' => ComiteSeleccion::Permanente,
+        ]);
     }
 }
