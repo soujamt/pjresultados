@@ -1,9 +1,13 @@
 {{--
-    Anexo 07: resultados de la evaluación técnica, uno por puesto. Replica el
-    formato oficial en Excel (A4 horizontal, Arial, cabecera guinda). Arial la
-    registra FuenteArial desde las fuentes del servidor; si no la tiene, sale
-    Helvetica, que tiene las mismas medidas. La cabecera de la tabla se repite
-    en cada página.
+    Anexo 07: resultados de la evaluación técnica. Como en los documentos que
+    publica la Corte, la cabecera (logo, proceso, entidad, régimen) va una sola
+    vez al inicio, después los puestos uno tras otro, cada uno con su tabla, y
+    al final una sola vez el párrafo de los aptos, la fecha y el comité.
+
+    A4 horizontal, en Arial (la registra FuenteArial desde las fuentes del
+    servidor; si no la tiene, sale Helvetica, que tiene las mismas medidas).
+    La cabecera de cada tabla se repite si la tabla sigue en otra página, y el
+    número de página lo agrega PdfDeResultados al pie.
 --}}
 <!DOCTYPE html>
 <html lang="es">
@@ -25,10 +29,6 @@
             font-family: Arial, Helvetica, sans-serif;
             font-size: 7pt;
             color: #000;
-        }
-
-        .puesto + .puesto {
-            page-break-before: always;
         }
 
         .membrete {
@@ -72,13 +72,18 @@
         }
 
         h1.titulo {
-            margin: 0.45cm 0 0.45cm;
+            margin: 0.45cm 0 0;
+        }
+
+        .puesto {
+            margin-top: 0.45cm;
         }
 
         .datos-del-puesto {
-            margin: 0 0 0.3cm;
+            margin: 0 0 0.25cm;
             font-size: 8.5pt;
             line-height: 1.35;
+            page-break-inside: avoid;
         }
 
         .datos-del-puesto strong {
@@ -122,15 +127,19 @@
         }
 
         /*
-         * Saltos de página: la firma nunca queda sola. El cierre (párrafo y
-         * firma) no se parte ni se separa de la tabla, y entre las últimas
-         * cuatro filas no se corta; si el cierre no entra, esas filas pasan
-         * con él a la página siguiente, que repite la cabecera de la tabla.
+         * Saltos de página. Nada queda suelto:
+         * - los datos del puesto no se separan de su tabla, y la cabecera de
+         *   la tabla va con al menos sus tres primeras filas (tr.inicio; Dompdf
+         *   solo protege la fila de la cabecera, no la primera de datos);
+         * - entre las últimas cuatro filas de cada tabla no se corta (tr.final);
+         * - el cierre (párrafo y firma) no se parte ni se separa de la última
+         *   tabla: si no entra, pasa a la página siguiente con sus últimas filas.
          */
         table.resultados {
             page-break-before: avoid;
         }
 
+        table.resultados tr.inicio,
         table.resultados tr.final {
             page-break-before: avoid;
         }
@@ -159,24 +168,24 @@
     </style>
 </head>
 <body>
+    {{-- Logo sin transparencia y a tamaño de impresión: Dompdf procesa lento los PNG con canal alfa. --}}
+    <table class="membrete">
+        <tr>
+            <td class="logo"><img src="{{ public_path('img/pj-logo-reporte.jpg') }}" alt="Poder Judicial del Perú"></td>
+            <td class="anexo">ANEXO N.° 07</td>
+            <td class="logo"></td>
+        </tr>
+    </table>
+
+    <h1 class="proceso">{{ mb_strtoupper($proceso->nombre_pro) }}</h1>
+    <h1>{{ mb_strtoupper($proceso->entidad_pro) }}</h1>
+    @if ($proceso->regimen_pro)
+        <h1 class="regimen">{{ mb_strtoupper($proceso->regimen_pro) }}</h1>
+    @endif
+    <h1 class="titulo">RESULTADOS DE LA EVALUACIÓN TÉCNICA</h1>
+
     @foreach ($resultados as $delPuesto)
         <div class="puesto">
-            {{-- Logo sin transparencia y a tamaño de impresión: Dompdf procesa lento los PNG con canal alfa. --}}
-            <table class="membrete">
-                <tr>
-                    <td class="logo"><img src="{{ public_path('img/pj-logo-reporte.jpg') }}" alt="Poder Judicial del Perú"></td>
-                    <td class="anexo">ANEXO N.° 07</td>
-                    <td class="logo"></td>
-                </tr>
-            </table>
-
-            <h1 class="proceso">{{ mb_strtoupper($proceso->nombre_pro) }}</h1>
-            <h1>{{ mb_strtoupper($proceso->entidad_pro) }}</h1>
-            @if ($proceso->regimen_pro)
-                <h1 class="regimen">{{ mb_strtoupper($proceso->regimen_pro) }}</h1>
-            @endif
-            <h1 class="titulo">RESULTADOS DE LA EVALUACIÓN TÉCNICA</h1>
-
             <div class="datos-del-puesto">
                 <div><strong>Puesto:</strong> {{ $delPuesto->puesto->nombre_pue }}</div>
                 <div><strong>Código del puesto:</strong> {{ $delPuesto->puesto->codigo_pue }}</div>
@@ -198,7 +207,7 @@
                 </thead>
                 <tbody>
                     @foreach ($delPuesto->filas as $fila)
-                        <tr @class(['final' => $loop->remaining < 3])>
+                        <tr @class(['inicio' => $loop->index < 3, 'final' => $loop->remaining < 3])>
                             <td>{{ $fila->numero }}</td>
                             <td class="nombres">{{ $fila->inscripcion->apellidos_nombres_ins }}</td>
                             <td>{{ $fila->nota }}</td>
@@ -211,22 +220,28 @@
                 </tbody>
             </table>
 
-            <div class="cierre">
-                <p class="pie">
-                    Los postulantes con puntaje de evaluación técnica mayor o igual a {{ $proceso->puntajeMinimoTexto() }} puntos,
-                    deben remitir día <span class="resaltado">{{ $proceso->fecha_limite_documentos_pro?->format('d/m/Y') }}</span>
-                    hasta las 23:59 horas al <span class="resaltado">correo electrónico <strong>{{ $proceso->correo_documentos_pro }}</strong></span>
-                    el reporte de postulación, las imágenes del documento de
-                    identidad y la documentación que sustenta los registros realizados al momento de la postulación, así como la
-                    <strong>Declaración Jurada que figura como anexo único en las bases del proceso, la cual debe ser debidamente
-                    llenada, suscrita y presentada.</strong>
-                </p>
+            {{--
+                El cierre va una sola vez, pero dentro del último puesto y justo
+                después de su tabla: así, si no entra, Dompdf lo lleva a la página
+                siguiente junto con las últimas filas de esa tabla.
+            --}}
+            @if ($loop->last)
+                <div class="cierre">
+                    <p class="pie">
+                        Los postulantes con puntaje de evaluación técnica mayor o igual a {{ $proceso->puntajeMinimoTexto() }} puntos,
+                        deben remitir día <span class="resaltado">{{ $proceso->fecha_limite_documentos_pro?->format('d/m/Y') }}</span>
+                        hasta las 23:59 horas al <span class="resaltado">correo electrónico <strong>{{ $proceso->correo_documentos_pro }}</strong></span>
+                        el reporte de postulación, las imágenes del documento de identidad y la documentación que sustenta los
+                        registros realizados al momento de la postulación, así como la <strong>Declaración Jurada que figura como
+                        anexo único en las bases del proceso, la cual debe ser debidamente llenada, suscrita y presentada.</strong>
+                    </p>
 
-                <p class="firma">
-                    {{ $proceso->lugarYFechaDeResultados() }}<br>
-                    El {{ $proceso->comite_pro?->etiqueta() }}
-                </p>
-            </div>
+                    <p class="firma">
+                        {{ $proceso->lugarYFechaDeResultados() }}<br>
+                        El {{ $proceso->comite_pro?->etiqueta() }}
+                    </p>
+                </div>
+            @endif
         </div>
     @endforeach
 </body>

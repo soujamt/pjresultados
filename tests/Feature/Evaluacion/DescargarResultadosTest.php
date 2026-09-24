@@ -13,8 +13,10 @@ use App\Services\Evaluacion\FilaDeResultado;
 use App\Services\Evaluacion\ResultadoDePuesto;
 use App\Services\Evaluacion\ResultadoService;
 use App\Services\Reportes\FuenteArial;
+use App\Services\Reportes\PdfDeResultados;
 use Barryvdh\DomPDF\Facade\Pdf;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\RichText\RichText;
 
 beforeEach(function () {
     $this->proceso = Proceso::factory()->conPublicacion()->create(['codigo_pro' => '014-2026-UE-UCAYALI']);
@@ -64,7 +66,34 @@ it('arma el PDF con el orden de merito, la condicion y el pie de la publicacion'
         ->assertSee('El Comité de Selección de Personal Permanente');
 });
 
-it('descarga el Excel con una hoja por puesto en el formato del anexo', function () {
+it('pone la cabecera y el cierre una sola vez aunque haya varios puestos', function () {
+    $otro = Puesto::factory()->create(['id_pro' => $this->proceso->id_pro, 'codigo_pue' => '00421']);
+    Inscripcion::factory()->create(['id_pue' => $otro->id_pue]);
+
+    $html = view('reportes.resultados-tecnica', [
+        'proceso' => $this->proceso,
+        'resultados' => app(ResultadoService::class)->porPuesto($this->proceso),
+    ])->render();
+
+    expect(substr_count($html, 'ANEXO N.° 07'))->toBe(1)
+        ->and(substr_count($html, 'RESULTADOS DE LA EVALUACIÓN TÉCNICA'))->toBe(1)
+        ->and(substr_count($html, 'Los postulantes con puntaje'))->toBe(1)
+        ->and(substr_count($html, 'Código del puesto:'))->toBe(2);
+});
+
+it('numera las paginas del PDF al pie', function () {
+    /* Sin Arial el número sale en Helvetica, que se guarda como texto legible dentro del PDF. */
+    config(['app.fuente_arial' => sys_get_temp_dir().'/sin-arial']);
+
+    $pdf = app(PdfDeResultados::class)->generar($this->proceso, app(ResultadoService::class)->porPuesto($this->proceso));
+
+    preg_match_all('/stream\r?\n(.*?)\r?\nendstream/s', $pdf->output(), $flujos);
+    $texto = implode("\n", array_map(fn (string $flujo): string => (string) @gzuncompress($flujo), $flujos[1]));
+
+    expect($texto)->toContain('gina 1 de 1');
+});
+
+it('descarga el Excel en una sola hoja, como el PDF', function () {
     $otro = Puesto::factory()->create(['id_pro' => $this->proceso->id_pro, 'codigo_pue' => '00421']);
     Inscripcion::factory()->create(['id_pue' => $otro->id_pue]);
 
@@ -73,14 +102,21 @@ it('descarga el Excel con una hoja por puesto en el formato del anexo', function
         ->assertDownload('resultados-evaluacion-tecnica-014-2026-ue-ucayali.xlsx');
 
     $libro = IOFactory::load($respuesta->getFile()->getPathname());
-    $hoja = $libro->getSheetByName('00309');
+    $hoja = $libro->getActiveSheet();
+    $texto = fn (string $celda): string => (string) ($hoja->getCell($celda)->getValue() instanceof RichText
+        ? $hoja->getCell($celda)->getValue()->getPlainText()
+        : $hoja->getCell($celda)->getValue());
 
-    expect($libro->getSheetNames())->toBe(['00309', '00421'])
-        ->and($hoja?->getCell('B1')->getValue())->toBe('ANEXO N.° 07')
-        ->and($hoja?->rangeToArray('B16:H17', formatData: false))->toBe([
+    expect($libro->getSheetNames())->toBe(['Anexo 07'])
+        ->and($texto('B1'))->toBe('ANEXO N.° 07')
+        ->and($hoja->rangeToArray('B16:H17', formatData: false))->toBe([
             [1, 'GALVEZ DORADO LUCIA', 26, 17.33, 5.2, 'APTO', null],
             [2, 'ALARCON SIERRA MATEO', 19, 12.67, 3.8, 'NO APTO', ResultadoService::NO_ALCANZO],
-        ]);
+        ])
+        ->and($texto('B20'))->toBe('Código del puesto: 00421')
+        ->and($texto('B26'))->toStartWith('Los postulantes con puntaje de evaluación técnica mayor o igual a 3,9 puntos')
+        ->and($texto('B28'))->toBe("Pucallpa, 27 de Setiembre del año 2026\nEl Comité de Selección de Personal Permanente")
+        ->and($hoja->getHeaderFooter()->getOddFooter())->toContain('Página &P de &N');
 });
 
 it('no descarga sin los datos de la publicacion', function () {
@@ -101,57 +137,92 @@ it('no descarga el puesto de otro proceso', function () {
     descargarResultados('pdf', ['puesto' => $ajeno->id_pue])->assertNotFound();
 });
 
-it('no deja la firma ni el pie solos en una pagina del PDF', function (int $postulantes) {
-    $filas = array_map(fn (int $numero): FilaDeResultado => new FilaDeResultado(
-        numero: $numero,
-        inscripcion: new Inscripcion(['documento_ins' => sprintf('7%07d', $numero), 'apellidos_nombres_ins' => "POSTULANTE {$numero} DE PRUEBA"]),
-        nota: 10,
-        notaParcial: 10 * 20 / 30,
-        puntaje: 2.0,
-        condicion: CondicionResultado::NoApto,
-        observacion: ResultadoService::NO_ALCANZO,
-        rindio: true,
-        descalificado: false,
-    ), range(1, $postulantes));
+/**
+ * Arma el PDF con puestos ficticios de los tamaños indicados y devuelve en qué
+ * página quedó cada cosa: por puesto, sus datos y cada una de sus filas; y el
+ * párrafo del pie y la firma.
+ *
+ * @param  list<int>  $tamanos
+ * @return array{puestos: list<array{datos: int, filas: list<int>}>, pie: int, firma: int}
+ */
+function paginasDelPdf(Proceso $proceso, array $tamanos): array
+{
+    $resultados = array_map(function (int $indice, int $cantidad): ResultadoDePuesto {
+        $puesto = new Puesto(['codigo_pue' => sprintf('%05d', 300 + $indice), 'nombre_pue' => "PUESTO DE PRUEBA {$indice}"]);
+        $puesto->setRelation('unidad', new Unidad(['nombre_uni' => "UNIDAD DE PRUEBA {$indice}"]));
 
-    $pagina = ['fila' => 0, 'filasEnLaUltima' => 0, 'pie' => 0, 'firma' => 0];
-    $pdf = Pdf::loadView('reportes.resultados-tecnica', [
-        'proceso' => $this->proceso,
-        'resultados' => [new ResultadoDePuesto($this->puesto, $filas)],
-    ])->setPaper('a4', 'landscape');
+        return new ResultadoDePuesto($puesto, array_map(fn (int $numero): FilaDeResultado => new FilaDeResultado(
+            $numero,
+            new Inscripcion(['documento_ins' => sprintf('7%07d', $numero), 'apellidos_nombres_ins' => "POSTULANTE {$numero} DE PRUEBA"]),
+            10, 10 * 20 / 30, 2.0, CondicionResultado::NoApto, ResultadoService::NO_ALCANZO, true, false,
+        ), range(1, $cantidad)));
+    }, array_keys($tamanos), $tamanos);
+
+    $paginas = ['puestos' => [], 'pie' => 0, 'firma' => 0];
+    $pdf = Pdf::loadView('reportes.resultados-tecnica', ['proceso' => $proceso, 'resultados' => $resultados])->setPaper('a4', 'landscape');
+    app(FuenteArial::class)->registrar($pdf->getDomPDF());
 
     $pdf->getDomPDF()->setCallbacks([[
         'event' => 'begin_frame',
-        'f' => function ($frame, $canvas) use (&$pagina): void {
+        'f' => function ($frame, $canvas) use (&$paginas): void {
             $nodo = $frame->get_node();
-            $numero = $canvas->get_page_number();
 
-            if ($nodo->nodeName === 'tr' && $nodo->parentNode?->nodeName === 'tbody') {
-                $pagina['filasEnLaUltima'] = $numero === $pagina['fila'] ? $pagina['filasEnLaUltima'] + 1 : 1;
-                $pagina['fila'] = $numero;
-            } elseif ($nodo instanceof DOMElement && in_array($nodo->getAttribute('class'), ['pie', 'firma'], true)) {
-                $pagina[$nodo->getAttribute('class')] = $numero;
+            if (! $nodo instanceof DOMElement) {
+                return;
+            }
+
+            $pagina = $canvas->get_page_number();
+            $clase = $nodo->getAttribute('class');
+            $tabla = $nodo->parentNode?->parentNode;
+
+            if ($clase === 'datos-del-puesto') {
+                $paginas['puestos'][] = ['datos' => $pagina, 'filas' => []];
+            } elseif ($nodo->nodeName === 'tr' && $tabla instanceof DOMElement && $tabla->getAttribute('class') === 'resultados'
+                && $nodo->parentNode->nodeName === 'tbody') {
+                $paginas['puestos'][array_key_last($paginas['puestos'])]['filas'][] = $pagina;
+            } elseif (in_array($clase, ['pie', 'firma'], true)) {
+                $paginas[$clase] = $pagina;
             }
         },
     ]]);
     $pdf->output();
 
-    expect([$pagina['pie'], $pagina['firma']])->toBe([$pagina['fila'], $pagina['fila']])
-        ->and($pagina['filasEnLaUltima'])->toBeGreaterThanOrEqual(min(4, $postulantes));
+    return $paginas;
+}
+
+it('no deja nada suelto al cortar las paginas del PDF', function (array $tamanos) {
+    $paginas = paginasDelPdf($this->proceso, $tamanos);
+
+    foreach ($paginas['puestos'] as $puesto) {
+        $filas = $puesto['filas'];
+        $porPagina = array_count_values($filas);
+
+        expect($puesto['datos'])->toBe($filas[0], 'Los datos del puesto quedaron separados de su tabla.')
+            ->and($porPagina[$filas[0]])->toBeGreaterThanOrEqual(min(3, count($filas)), 'La tabla empieza con muy pocas filas.')
+            ->and($porPagina[end($filas)])->toBeGreaterThanOrEqual(min(4, count($filas)), 'La tabla termina con muy pocas filas en otra página.');
+    }
+
+    $ultimaFila = end(end($paginas['puestos'])['filas']);
+
+    expect([$paginas['pie'], $paginas['firma']])->toBe([$ultimaFila, $ultimaFila], 'El cierre quedó en otra página.');
 })->with([
     /*
-     * Tamaños en los que, sin las reglas de salto de página, el cierre queda
-     * mal. Cambian con la fuente: los PDF salen en Arial donde el servidor la
-     * tiene y en Helvetica donde no (como en la integración continua).
+     * Documentos en los que, sin las reglas de salto de página de la vista,
+     * algo queda suelto. Cambian con la fuente: el PDF sale en Arial donde el
+     * servidor la tiene y en Helvetica donde no (como en la integración continua).
      */
-    'Arial: la firma sola en la segunda página' => 12,
-    'Arial: el pie sin filas' => 15,
-    'Arial: una sola fila en la última página' => 18,
-    'Arial: la firma sola en la tercera página' => 45,
-    'Helvetica: la firma sola en la segunda página' => 17,
-    'Helvetica: el pie sin filas' => 20,
-    'Helvetica: una sola fila en la última página' => 23,
-    'Helvetica: la firma sola en la tercera página' => 56,
+    'Arial: la firma sola' => [[12]],
+    'Arial: el pie sin filas' => [[15]],
+    'Arial: una sola fila en la última página' => [[18]],
+    'Arial: el cierre en otra página' => [[3, 12, 3, 7]],
+    'Arial: una tabla termina con una fila' => [[4, 12, 3, 7]],
+    'Arial: el puesto separado de su tabla' => [[8, 12, 3, 7]],
+    'Helvetica: la firma sola' => [[17]],
+    'Helvetica: el pie sin filas' => [[20]],
+    'Helvetica: una sola fila en la última página' => [[23]],
+    'Helvetica: el cierre en otra página' => [[8, 12, 3, 7]],
+    'Helvetica: una tabla empieza con una fila' => [[12, 12, 3, 7]],
+    'Helvetica: el puesto separado de su tabla' => [[13, 12, 3, 7]],
 ]);
 
 it('descarga el PDF en Arial cuando el servidor la tiene instalada', function () {

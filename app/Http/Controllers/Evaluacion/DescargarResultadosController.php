@@ -9,8 +9,7 @@ use App\Models\Proceso;
 use App\Models\Puesto;
 use App\Models\Unidad;
 use App\Services\Evaluacion\ResultadoService;
-use App\Services\Reportes\FuenteArial;
-use Barryvdh\DomPDF\Facade\Pdf;
+use App\Services\Reportes\PdfDeResultados;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Maatwebsite\Excel\Facades\Excel;
@@ -22,9 +21,9 @@ class DescargarResultadosController extends Controller
     /**
      * Descarga los resultados de la evaluación técnica en el formato del
      * Anexo 07, en PDF o en Excel. Sin puesto trae todos los del proceso (o de
-     * la unidad), cada uno en su propia página u hoja.
+     * la unidad), uno tras otro bajo una sola cabecera.
      */
-    public function __invoke(Request $request, Proceso $proceso, string $formato, ResultadoService $resultados, FuenteArial $arial): Response|BinaryFileResponse
+    public function __invoke(Request $request, Proceso $proceso, string $formato, ResultadoService $resultados, PdfDeResultados $pdf): Response|BinaryFileResponse
     {
         Gate::authorize(Permiso::ResultadosExportar->value);
 
@@ -50,14 +49,8 @@ class DescargarResultadosController extends Controller
 
         $nombre = $resultados->nombreArchivo($proceso, $puesto);
 
-        if ($formato === 'excel') {
-            return Excel::download(new ResultadosTecnicaExport($proceso, $porPuesto), "{$nombre}.xlsx");
-        }
-
-        $pdf = Pdf::loadView('reportes.resultados-tecnica', ['proceso' => $proceso, 'resultados' => $porPuesto])
-            ->setPaper('a4', 'landscape');
-        $arial->registrar($pdf->getDomPDF());
-
-        return $pdf->download("{$nombre}.pdf");
+        return $formato === 'excel'
+            ? Excel::download(new ResultadosTecnicaExport($proceso, $porPuesto), "{$nombre}.xlsx")
+            : $pdf->generar($proceso, $porPuesto)->download("{$nombre}.pdf");
     }
 }
