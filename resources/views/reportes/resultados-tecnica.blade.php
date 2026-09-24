@@ -6,8 +6,7 @@
 
     A4 horizontal, en Arial (la registra FuenteArial desde las fuentes del
     servidor; si no la tiene, sale Helvetica, que tiene las mismas medidas).
-    La cabecera de cada tabla se repite si la tabla sigue en otra página, y el
-    número de página lo agrega PdfDeResultados al pie.
+    La cabecera de cada tabla se repite si la tabla sigue en otra página.
 --}}
 <!DOCTYPE html>
 <html lang="es">

@@ -81,8 +81,8 @@ it('pone la cabecera y el cierre una sola vez aunque haya varios puestos', funct
         ->and(substr_count($html, 'Código del puesto:'))->toBe(2);
 });
 
-it('numera las paginas del PDF al pie', function () {
-    /* Sin Arial el número sale en Helvetica, que se guarda como texto legible dentro del PDF. */
+it('no muestra numeros de pagina en el PDF', function () {
+    /* Con Helvetica, el antiguo pie se detecta en el flujo del PDF. */
     config(['app.fuente_arial' => sys_get_temp_dir().'/sin-arial']);
 
     $pdf = app(PdfDeResultados::class)->generar($this->proceso, app(ResultadoService::class)->porPuesto($this->proceso));
@@ -90,7 +90,8 @@ it('numera las paginas del PDF al pie', function () {
     preg_match_all('/stream\r?\n(.*?)\r?\nendstream/s', $pdf->output(), $flujos);
     $texto = implode("\n", array_map(fn (string $flujo): string => (string) @gzuncompress($flujo), $flujos[1]));
 
-    expect($texto)->toContain('gina 1 de 1');
+    expect(str_contains($texto, mb_convert_encoding('SECRETARIO JUDICIAL', 'UTF-16BE', 'UTF-8')))->toBeTrue();
+    expect(str_contains($texto, 'gina 1 de 1'))->toBeFalse();
 });
 
 it('descarga el Excel en una sola hoja, como el PDF', function () {

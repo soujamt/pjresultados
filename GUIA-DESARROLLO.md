@@ -153,8 +153,9 @@ correo para los documentos, fecha, ciudad y comité); sin ellos no se descarga n
 El PDF (`app/Services/Reportes/PdfDeResultados.php` con la vista `resources/views/reportes/resultados-tecnica.blade.php`)
 y el Excel (`app/Exports/ResultadosTecnicaExport.php`, una sola hoja) replican el Anexo 07 como lo publica la
 Corte: la cabecera (logo, proceso, entidad, régimen) una sola vez, los puestos uno tras otro con su tabla y, al
-final, una sola vez el párrafo de los aptos, la fecha y el comité. Llevan «Página N de M» abajo a la derecha y
-las medidas del Excel guardado como PDF (márgenes amplios, tabla a 6 pt). El logo de los reportes es
+final, una sola vez el párrafo de los aptos, la fecha y el comité. El Excel lleva «Página N de M» abajo a la
+derecha; el PDF no muestra número de página. Ambos usan las medidas del Excel guardado como PDF (márgenes
+amplios, tabla a 6 pt). El logo de los reportes es
 `public/img/pj-logo-reporte.jpg`, sin transparencia: Dompdf procesa lento los PNG con canal alfa.
 
 **Los dos van en Arial.** Arial es de Microsoft y no se puede redistribuir, así que no está en el repositorio:
