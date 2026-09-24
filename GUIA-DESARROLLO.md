@@ -150,9 +150,11 @@ PRESENTÓ» (sin hoja). Las demás (se retiró de la sala, etc.) se registran co
 postulante NO APTO con puntaje 0. El pie del anexo necesita los **Datos de la publicación** (fecha límite y
 correo para los documentos, fecha, ciudad y comité); sin ellos no se descarga nada.
 
-El PDF (`resources/views/reportes/resultados-tecnica.blade.php`, con Dompdf) y el Excel
-(`app/Exports/ResultadosTecnicaHoja.php`, una hoja por puesto) replican el Anexo 07 oficial, con las medidas
-del Excel guardado como PDF (márgenes amplios, tabla a 6 pt). El logo de los reportes es
+El PDF (`app/Services/Reportes/PdfDeResultados.php` con la vista `resources/views/reportes/resultados-tecnica.blade.php`)
+y el Excel (`app/Exports/ResultadosTecnicaExport.php`, una sola hoja) replican el Anexo 07 como lo publica la
+Corte: la cabecera (logo, proceso, entidad, régimen) una sola vez, los puestos uno tras otro con su tabla y, al
+final, una sola vez el párrafo de los aptos, la fecha y el comité. Llevan «Página N de M» abajo a la derecha y
+las medidas del Excel guardado como PDF (márgenes amplios, tabla a 6 pt). El logo de los reportes es
 `public/img/pj-logo-reporte.jpg`, sin transparencia: Dompdf procesa lento los PNG con canal alfa.
 
 **Los dos van en Arial.** Arial es de Microsoft y no se puede redistribuir, así que no está en el repositorio:
@@ -161,9 +163,12 @@ del Excel guardado como PDF (márgenes amplios, tabla a 6 pt). El logo de los re
 (`sudo apt install ttf-mscorefonts-installer`) o indicar la carpeta con `PDF_FUENTE_ARIAL`. Si no la
 encuentra, el PDF sale en Helvetica, que tiene las mismas medidas.
 
-**Saltos de página del PDF:** el párrafo final y la firma nunca quedan solos; si no entran, pasan a la
-página siguiente con las últimas cuatro filas (reglas `.cierre` y `tr.final` de la vista). El test
-«no deja la firma ni el pie solos» cubre los tamaños de puesto en los que fallaría sin esas reglas.
+**Saltos de página del PDF** (reglas `tr.inicio`, `tr.final` y `.cierre` de la vista): los datos del puesto
+no se separan de su tabla, cada tabla empieza con al menos tres filas y termina con al menos cuatro en su
+última página, y el cierre va dentro del último puesto para que, si no entra, pase a la página siguiente con
+las últimas filas. El test «no deja nada suelto al cortar las páginas» cubre, con Arial y con Helvetica, los
+documentos en los que fallaría sin esas reglas; si se cambian medidas o márgenes, conviene revisar que sigan
+siendo casos críticos. En el Excel los saltos los decide Excel al imprimir.
 
 ---
 
