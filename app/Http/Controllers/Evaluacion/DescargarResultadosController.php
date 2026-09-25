@@ -21,7 +21,9 @@ class DescargarResultadosController extends Controller
     /**
      * Descarga los resultados de la evaluación técnica en el formato del
      * Anexo 07, en PDF o en Excel. Sin puesto trae todos los del proceso (o de
-     * la unidad), uno tras otro bajo una sola cabecera.
+     * la unidad), uno tras otro bajo una sola cabecera. En el PDF,
+     * repetir_titulos=0 deja la fila de títulos de cada tabla solo al inicio,
+     * sin repetirla en las páginas siguientes.
      */
     public function __invoke(Request $request, Proceso $proceso, string $formato, ResultadoService $resultados, PdfDeResultados $pdf): Response|BinaryFileResponse
     {
@@ -30,6 +32,7 @@ class DescargarResultadosController extends Controller
         $request->validate([
             'unidad' => ['nullable', 'integer'],
             'puesto' => ['nullable', 'integer'],
+            'repetir_titulos' => ['nullable', 'boolean'],
         ]);
 
         abort_unless(
@@ -51,6 +54,6 @@ class DescargarResultadosController extends Controller
 
         return $formato === 'excel'
             ? Excel::download(new ResultadosTecnicaExport($proceso, $porPuesto), "{$nombre}.xlsx")
-            : $pdf->generar($proceso, $porPuesto)->download("{$nombre}.pdf");
+            : $pdf->generar($proceso, $porPuesto, $request->boolean('repetir_titulos', true))->download("{$nombre}.pdf");
     }
 }

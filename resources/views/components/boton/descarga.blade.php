@@ -24,7 +24,7 @@
     :size="$size"
     :square="$soloIcono"
     :x-data="'descarga('.Illuminate\Support\Js::from($href).')'"
-    x-on:click="descargar"
+    x-on:click="descargar()"
     x-bind:aria-busy="descargando"
     x-bind:class="descargando && 'pointer-events-none'"
     {{ $attributes->class(['ps-3!' => ! $soloIcono]) }}

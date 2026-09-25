@@ -31,21 +31,22 @@ window.cambiarSinTransiciones = (cambio) => {
  * error (sin permiso, faltan datos) se muestra en un aviso en vez de abrir
  * una página de error.
  *
- * Uso: <x-boton.descarga :href="..."> (resources/views/components/boton).
+ * Uso: <x-boton.descarga :href="..."> o, con varias formas del mismo archivo,
+ * <x-boton.descarga-opciones> (resources/views/components/boton).
  */
 document.addEventListener('alpine:init', () => {
-    window.Alpine.data('descarga', (url) => ({
+    window.Alpine.data('descarga', (url = null) => ({
         descargando: false,
 
-        async descargar() {
-            if (this.descargando) {
+        async descargar(destino = url) {
+            if (this.descargando || !destino) {
                 return;
             }
 
             this.descargando = true;
 
             try {
-                const respuesta = await fetch(url, {
+                const respuesta = await fetch(destino, {
                     headers: { Accept: 'application/json' },
                     credentials: 'same-origin',
                 });

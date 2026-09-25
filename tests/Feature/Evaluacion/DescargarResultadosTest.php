@@ -140,13 +140,13 @@ it('no descarga el puesto de otro proceso', function () {
 
 /**
  * Arma el PDF con puestos ficticios de los tamaños indicados y devuelve en qué
- * página quedó cada cosa: por puesto, sus datos y cada una de sus filas; y el
- * párrafo del pie y la firma.
+ * página quedó cada cosa: por puesto, sus datos, las páginas donde se dibujó
+ * la fila de títulos y cada una de sus filas; y el párrafo del pie y la firma.
  *
  * @param  list<int>  $tamanos
- * @return array{puestos: list<array{datos: int, filas: list<int>}>, pie: int, firma: int}
+ * @return array{puestos: list<array{datos: int, titulos: list<int>, filas: list<int>}>, pie: int, firma: int}
  */
-function paginasDelPdf(Proceso $proceso, array $tamanos): array
+function paginasDelPdf(Proceso $proceso, array $tamanos, bool $repetirTitulos = true): array
 {
     $resultados = array_map(function (int $indice, int $cantidad): ResultadoDePuesto {
         $puesto = new Puesto(['codigo_pue' => sprintf('%05d', 300 + $indice), 'nombre_pue' => "PUESTO DE PRUEBA {$indice}"]);
@@ -160,7 +160,11 @@ function paginasDelPdf(Proceso $proceso, array $tamanos): array
     }, array_keys($tamanos), $tamanos);
 
     $paginas = ['puestos' => [], 'pie' => 0, 'firma' => 0];
-    $pdf = Pdf::loadView('reportes.resultados-tecnica', ['proceso' => $proceso, 'resultados' => $resultados])->setPaper('a4', 'landscape');
+    $pdf = Pdf::loadView('reportes.resultados-tecnica', [
+        'proceso' => $proceso,
+        'resultados' => $resultados,
+        'repetirTitulos' => $repetirTitulos,
+    ])->setPaper('a4', 'landscape');
     app(FuenteArial::class)->registrar($pdf->getDomPDF());
 
     $pdf->getDomPDF()->setCallbacks([[
@@ -177,10 +181,9 @@ function paginasDelPdf(Proceso $proceso, array $tamanos): array
             $tabla = $nodo->parentNode?->parentNode;
 
             if ($clase === 'datos-del-puesto') {
-                $paginas['puestos'][] = ['datos' => $pagina, 'filas' => []];
-            } elseif ($nodo->nodeName === 'tr' && $tabla instanceof DOMElement && $tabla->getAttribute('class') === 'resultados'
-                && $nodo->parentNode->nodeName === 'tbody') {
-                $paginas['puestos'][array_key_last($paginas['puestos'])]['filas'][] = $pagina;
+                $paginas['puestos'][] = ['datos' => $pagina, 'titulos' => [], 'filas' => []];
+            } elseif ($nodo->nodeName === 'tr' && $tabla instanceof DOMElement && $tabla->getAttribute('class') === 'resultados') {
+                $paginas['puestos'][array_key_last($paginas['puestos'])][$clase === 'titulos' ? 'titulos' : 'filas'][] = $pagina;
             } elseif (in_array($clase, ['pie', 'firma'], true)) {
                 $paginas[$clase] = $pagina;
             }
@@ -191,14 +194,14 @@ function paginasDelPdf(Proceso $proceso, array $tamanos): array
     return $paginas;
 }
 
-it('no deja nada suelto al cortar las paginas del PDF', function (array $tamanos) {
-    $paginas = paginasDelPdf($this->proceso, $tamanos);
+it('no deja nada suelto al cortar las paginas del PDF', function (array $tamanos, bool $repetirTitulos = true) {
+    $paginas = paginasDelPdf($this->proceso, $tamanos, $repetirTitulos);
 
     foreach ($paginas['puestos'] as $puesto) {
         $filas = $puesto['filas'];
         $porPagina = array_count_values($filas);
 
-        expect($puesto['datos'])->toBe($filas[0], 'Los datos del puesto quedaron separados de su tabla.')
+        expect([$puesto['datos'], $puesto['titulos'][0]])->toBe([$filas[0], $filas[0]], 'Los datos del puesto o sus títulos quedaron separados de la tabla.')
             ->and($porPagina[$filas[0]])->toBeGreaterThanOrEqual(min(3, count($filas)), 'La tabla empieza con muy pocas filas.')
             ->and($porPagina[end($filas)])->toBeGreaterThanOrEqual(min(4, count($filas)), 'La tabla termina con muy pocas filas en otra página.');
     }
@@ -224,7 +227,32 @@ it('no deja nada suelto al cortar las paginas del PDF', function (array $tamanos
     'Helvetica: el cierre en otra página' => [[8, 12, 3, 7]],
     'Helvetica: una tabla empieza con una fila' => [[12, 12, 3, 7]],
     'Helvetica: el puesto separado de su tabla' => [[13, 12, 3, 7]],
+    // Con los títulos solo al inicio la fila de títulos es parte del cuerpo de la tabla: las mismas reglas valen.
+    'títulos solo al inicio: varios puestos' => [[8, 12, 3, 7], false],
+    'títulos solo al inicio: la firma con las últimas filas' => [[45], false],
+    'títulos solo al inicio: el último puesto largo' => [[12, 3, 30], false],
 ]);
+
+it('repite la fila de titulos en cada pagina solo si se pide', function (bool $repetirTitulos) {
+    $tabla = paginasDelPdf($this->proceso, [45], $repetirTitulos)['puestos'][0];
+    $paginasDeLaTabla = array_values(array_unique($tabla['filas']));
+
+    expect(count($paginasDeLaTabla))->toBeGreaterThan(1)
+        ->and($tabla['titulos'])->toBe($repetirTitulos ? $paginasDeLaTabla : [$paginasDeLaTabla[0]]);
+})->with([
+    'títulos en cada página' => true,
+    'títulos solo al inicio' => false,
+]);
+
+it('descarga el PDF con los titulos solo al inicio de cada tabla', function () {
+    $usuario = Usuario::factory()->superAdministrador()->create();
+
+    descargarResultados('pdf', ['puesto' => $this->puesto->id_pue, 'repetir_titulos' => 0], $usuario)
+        ->assertOk()
+        ->assertHeader('content-type', 'application/pdf');
+
+    descargarResultados('pdf', ['repetir_titulos' => 'talvez'], $usuario)->assertInvalid('repetir_titulos');
+});
 
 it('descarga el PDF en Arial cuando el servidor la tiene instalada', function () {
     $respuesta = descargarResultados('pdf', ['puesto' => $this->puesto->id_pue])->assertOk();

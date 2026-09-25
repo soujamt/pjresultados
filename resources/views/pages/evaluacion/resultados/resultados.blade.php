@@ -6,6 +6,20 @@
         'unidad' => $filtroUnidad,
         'puesto' => $filtroPuesto,
     ], fn ($valor) => $valor !== '') : [];
+
+    /* Las dos formas del PDF: la fila de títulos solo al inicio de cada tabla o en cada página. */
+    $opcionesPdf = fn (array $parametros): array => [
+        [
+            'etiqueta' => 'Títulos solo al inicio',
+            'descripcion' => 'Si la tabla sigue en otra página, continúan solo las filas.',
+            'href' => route('evaluacion.resultados.descargar', $parametros + ['formato' => 'pdf', 'repetir_titulos' => 0]),
+        ],
+        [
+            'etiqueta' => 'Títulos en cada página',
+            'descripcion' => 'La fila de títulos se repite en cada página por la que sigue la tabla.',
+            'href' => route('evaluacion.resultados.descargar', $parametros + ['formato' => 'pdf', 'repetir_titulos' => 1]),
+        ],
+    ];
 @endphp
 
 <div class="space-y-6">
@@ -29,13 +43,9 @@
                         >
                             Excel
                         </x-boton.descarga>
-                        <x-boton.descarga
-                            :href="route('evaluacion.resultados.descargar', $parametros + ['formato' => 'pdf'])"
-                            icon="pdf-02"
-                            variant="primary"
-                        >
+                        <x-boton.descarga-opciones :opciones="$opcionesPdf($parametros)" icon="pdf-02" variant="primary">
                             {{ $puestoElegido ? 'PDF del puesto' : 'PDF de '.count($resultados).' puesto(s)' }}
-                        </x-boton.descarga>
+                        </x-boton.descarga-opciones>
                     @else
                         <flux:tooltip :content="$resultados === [] ? 'No hay postulantes con estos filtros' : 'Completa antes los datos de la publicación'">
                             <div class="flex gap-2">
@@ -257,12 +267,12 @@
                                         <x-tabla.accion wire:click="verPuesto({{ $delPuesto->puesto->id_pue }})" icon="view" tooltip="Ver orden de mérito" />
                                         @can(App\Enums\Permiso::ResultadosExportar->value)
                                             @if ($proceso->publicacionCompleta())
-                                                <x-boton.descarga
-                                                    :href="route('evaluacion.resultados.descargar', ['proceso' => $proceso->codigo_pro, 'formato' => 'pdf', 'puesto' => $delPuesto->puesto->id_pue])"
+                                                <x-boton.descarga-opciones
+                                                    :opciones="$opcionesPdf(['proceso' => $proceso->codigo_pro, 'puesto' => $delPuesto->puesto->id_pue])"
                                                     size="sm"
                                                     variant="subtle"
                                                     icon="pdf-02"
-                                                    tooltip="PDF del puesto"
+                                                    title="PDF del puesto"
                                                     aria-label="PDF del puesto {{ $delPuesto->puesto->codigo_pue }}"
                                                 />
                                             @endif

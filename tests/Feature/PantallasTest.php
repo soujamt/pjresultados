@@ -339,3 +339,15 @@ it('solo descalifica quien tiene el permiso', function () {
 
     expect($inscripcion->descalificacion()->exists())->toBeFalse();
 });
+
+it('ofrece el PDF con los titulos solo al inicio o en cada pagina', function () {
+    $proceso = Proceso::factory()->conPublicacion()->create();
+    $puesto = Puesto::factory()->create(['id_pro' => $proceso->id_pro]);
+    Inscripcion::factory()->create(['id_pue' => $puesto->id_pue]);
+
+    Livewire::actingAs(Usuario::factory()->superAdministrador()->create())
+        ->test('pages::evaluacion.resultados', ['codigoProceso' => $proceso->codigo_pro])
+        ->assertSee(['Títulos solo al inicio', 'Títulos en cada página'])
+        ->assertSeeHtml('repetir_titulos=0')
+        ->assertSeeHtml('repetir_titulos=1');
+});

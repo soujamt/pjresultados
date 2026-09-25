@@ -6,7 +6,8 @@
 
     A4 horizontal, en Arial (la registra FuenteArial desde las fuentes del
     servidor; si no la tiene, sale Helvetica, que tiene las mismas medidas).
-    La cabecera de cada tabla se repite si la tabla sigue en otra página.
+    Con $repetirTitulos la fila de títulos de cada tabla se repite en cada
+    página por la que sigue la tabla; sin él, sale solo al inicio del puesto.
 --}}
 <!DOCTYPE html>
 <html lang="es">
@@ -191,20 +192,21 @@
                 <div><strong>Unidad de organización:</strong> {{ $delPuesto->puesto->unidad?->nombre_uni }}</div>
             </div>
 
-            {{-- Dompdf no respeta <colgroup>: los anchos van en la cabecera. Son las proporciones del Excel oficial. --}}
+            {{--
+                Dos formas, a elección de quien descarga: dentro de <thead> Dompdf
+                repite la fila de títulos en cada página por la que sigue la tabla;
+                como primera fila de <tbody> sale una sola vez, al inicio.
+            --}}
             <table class="resultados">
-                <thead>
-                    <tr>
-                        <th style="width: 3%">N.º</th>
-                        <th style="width: 24%">APELLIDOS Y NOMBRES</th>
-                        <th style="width: 6.5%">NOTA OBTENIDA</th>
-                        <th style="width: 9.5%">NOTA PARCIAL<br>(Nota obtenida *20/30)<br>(De mayor a menor)</th>
-                        <th style="width: 11%">PUNTAJE DE EVALUACIÓN TÉCNICA<br>(Nota parcial * 0.3)<br>(De mayor a menor)</th>
-                        <th style="width: 10%">CONDICIÓN<br>(APTO - NO APTO)</th>
-                        <th style="width: 36%">OBSERVACIONES</th>
-                    </tr>
-                </thead>
-                <tbody>
+                @if ($repetirTitulos ?? true)
+                    <thead>
+                        @include('reportes.resultados-tecnica-titulos')
+                    </thead>
+                    <tbody>
+                @else
+                    <tbody>
+                        @include('reportes.resultados-tecnica-titulos')
+                @endif
                     @foreach ($delPuesto->filas as $fila)
                         <tr @class(['inicio' => $loop->index < 3, 'final' => $loop->remaining < 3])>
                             <td>{{ $fila->numero }}</td>
