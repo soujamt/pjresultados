@@ -158,6 +158,12 @@ derecha; el PDF no muestra número de página. Ambos usan las medidas del Excel 
 amplios, tabla a 6 pt). El logo de los reportes es
 `public/img/pj-logo-reporte.jpg`, sin transparencia: Dompdf procesa lento los PNG con canal alfa.
 
+**El PDF se descarga de dos formas** (menú del botón PDF, parámetro `repetir_titulos`): con la fila de títulos
+de cada tabla solo al inicio del puesto (`0`: si la tabla sigue en otra página, continúan solo las filas) o
+repetida en cada página por la que sigue la tabla (`1`, lo que se usa si no se indica). En la vista la
+diferencia es dónde va la fila de títulos (`resultados-tecnica-titulos.blade.php`): en `<thead>` Dompdf la
+repite; como primera fila de `<tbody>` sale una sola vez.
+
 **Los dos van en Arial.** Arial es de Microsoft y no se puede redistribuir, así que no está en el repositorio:
 `app/Services/Reportes/FuenteArial.php` registra la del sistema la primera vez y Dompdf la copia a
 `storage/fonts` (fuera de git). En Windows ya está; en un servidor Linux hay que instalarla
