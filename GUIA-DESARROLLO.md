@@ -164,6 +164,12 @@ repetida en cada página por la que sigue la tabla (`1`, lo que se usa si no se 
 diferencia es dónde va la fila de títulos (`resultados-tecnica-titulos.blade.php`): en `<thead>` Dompdf la
 repite; como primera fila de `<tbody>` sale una sola vez.
 
+**El Excel también se descarga de dos formas** (menú del botón Excel cuando hay más de un puesto, parámetro
+`hoja_por_puesto`): todo en una hoja como el PDF (`0`, lo que se usa si no se indica) o una hoja por puesto
+(`1`, `app/Exports/ResultadosTecnicaPorPuestoExport.php`), donde cada hoja es un anexo completo con su cabecera
+y su cierre, lleva por nombre el código del puesto y repite la fila de títulos al imprimir. Las hojas las
+dibuja el mismo `ResultadosTecnicaExport` con un solo puesto, así que un cambio de formato vale para las dos.
+
 **Los dos van en Arial.** Arial es de Microsoft y no se puede redistribuir, así que no está en el repositorio:
 `app/Services/Reportes/FuenteArial.php` registra la del sistema la primera vez y Dompdf la copia a
 `storage/fonts` (fuera de git). En Windows ya está; en un servidor Linux hay que instalarla
