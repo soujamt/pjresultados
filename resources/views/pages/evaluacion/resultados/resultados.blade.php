@@ -20,6 +20,20 @@
             'href' => route('evaluacion.resultados.descargar', $parametros + ['formato' => 'pdf', 'repetir_titulos' => 1]),
         ],
     ];
+
+    /* Las dos formas del Excel: todos los puestos en una hoja o cada puesto en la suya. */
+    $opcionesExcel = fn (array $parametros): array => [
+        [
+            'etiqueta' => 'Todo en una hoja',
+            'descripcion' => 'Los puestos uno tras otro, con la cabecera una sola vez y el cierre al final.',
+            'href' => route('evaluacion.resultados.descargar', $parametros + ['formato' => 'excel', 'hoja_por_puesto' => 0]),
+        ],
+        [
+            'etiqueta' => 'Una hoja por puesto',
+            'descripcion' => 'Cada puesto en su propia hoja, con su cabecera y su cierre.',
+            'href' => route('evaluacion.resultados.descargar', $parametros + ['formato' => 'excel', 'hoja_por_puesto' => 1]),
+        ],
+    ];
 @endphp
 
 <div class="space-y-6">
@@ -35,14 +49,21 @@
 
                 @can(App\Enums\Permiso::ResultadosExportar->value)
                     @if ($puedeDescargar)
-                        <x-boton.descarga
-                            :href="route('evaluacion.resultados.descargar', $parametros + ['formato' => 'excel'])"
-                            icon="xls-02"
-                            variant="primary"
-                            color="green"
-                        >
-                            Excel
-                        </x-boton.descarga>
+                        {{-- Con un solo puesto las dos formas del Excel son la misma hoja. --}}
+                        @if (count($resultados) > 1)
+                            <x-boton.descarga-opciones :opciones="$opcionesExcel($parametros)" icon="xls-02" variant="primary" color="green">
+                                Excel
+                            </x-boton.descarga-opciones>
+                        @else
+                            <x-boton.descarga
+                                :href="route('evaluacion.resultados.descargar', $parametros + ['formato' => 'excel'])"
+                                icon="xls-02"
+                                variant="primary"
+                                color="green"
+                            >
+                                Excel
+                            </x-boton.descarga>
+                        @endif
                         <x-boton.descarga-opciones :opciones="$opcionesPdf($parametros)" icon="pdf-02" variant="primary">
                             {{ $puestoElegido ? 'PDF del puesto' : 'PDF de '.count($resultados).' puesto(s)' }}
                         </x-boton.descarga-opciones>

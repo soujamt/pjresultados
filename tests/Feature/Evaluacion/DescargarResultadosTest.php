@@ -120,6 +120,34 @@ it('descarga el Excel en una sola hoja, como el PDF', function () {
         ->and($hoja->getHeaderFooter()->getOddFooter())->toContain('Página &P de &N');
 });
 
+it('descarga el Excel con una hoja por puesto, cada una con su cabecera y su cierre', function () {
+    $otro = Puesto::factory()->create(['id_pro' => $this->proceso->id_pro, 'codigo_pue' => '00421']);
+    Inscripcion::factory()->create(['id_pue' => $otro->id_pue]);
+
+    $respuesta = descargarResultados('excel', ['hoja_por_puesto' => 1])
+        ->assertOk()
+        ->assertDownload('resultados-evaluacion-tecnica-014-2026-ue-ucayali.xlsx');
+
+    $libro = IOFactory::load($respuesta->getFile()->getPathname());
+    $texto = fn (string $hoja, string $celda): string => (string) ($libro->getSheetByName($hoja)->getCell($celda)->getValue() instanceof RichText
+        ? $libro->getSheetByName($hoja)->getCell($celda)->getValue()->getPlainText()
+        : $libro->getSheetByName($hoja)->getCell($celda)->getValue());
+
+    expect($libro->getSheetNames())->toBe(['00309', '00421'])
+        ->and($texto('00309', 'B1'))->toBe('ANEXO N.° 07')
+        ->and($texto('00309', 'B12'))->toBe('Código del puesto: 00309')
+        ->and($libro->getSheetByName('00309')->rangeToArray('B16:H17', formatData: false))->toBe([
+            [1, 'GALVEZ DORADO LUCIA', 26, 17.33, 5.2, 'APTO', null],
+            [2, 'ALARCON SIERRA MATEO', 19, 12.67, 3.8, 'NO APTO', ResultadoService::NO_ALCANZO],
+        ])
+        ->and($texto('00309', 'B19'))->toStartWith('Los postulantes con puntaje de evaluación técnica mayor o igual a 3,9 puntos')
+        ->and($texto('00309', 'B21'))->toBe("Pucallpa, 27 de Setiembre del año 2026\nEl Comité de Selección de Personal Permanente")
+        ->and($texto('00421', 'B1'))->toBe('ANEXO N.° 07')
+        ->and($texto('00421', 'B12'))->toBe('Código del puesto: 00421')
+        ->and($texto('00421', 'B18'))->toStartWith('Los postulantes con puntaje de evaluación técnica')
+        ->and($libro->getSheetByName('00421')->getPageSetup()->getRowsToRepeatAtTop())->toBe([15, 15]);
+});
+
 it('no descarga sin los datos de la publicacion', function () {
     $this->proceso->update(['correo_documentos_pro' => null]);
 

@@ -351,3 +351,29 @@ it('ofrece el PDF con los titulos solo al inicio o en cada pagina', function () 
         ->assertSeeHtml('repetir_titulos=0')
         ->assertSeeHtml('repetir_titulos=1');
 });
+
+it('ofrece el Excel en una hoja o con una hoja por puesto cuando hay varios puestos', function () {
+    $proceso = Proceso::factory()->conPublicacion()->create();
+
+    foreach (Puesto::factory()->count(2)->create(['id_pro' => $proceso->id_pro]) as $puesto) {
+        Inscripcion::factory()->create(['id_pue' => $puesto->id_pue]);
+    }
+
+    Livewire::actingAs(Usuario::factory()->superAdministrador()->create())
+        ->test('pages::evaluacion.resultados', ['codigoProceso' => $proceso->codigo_pro])
+        ->assertSee(['Todo en una hoja', 'Una hoja por puesto'])
+        ->assertSeeHtml('hoja_por_puesto=0')
+        ->assertSeeHtml('hoja_por_puesto=1');
+});
+
+it('con un solo puesto descarga el Excel sin preguntar la forma', function () {
+    $proceso = Proceso::factory()->conPublicacion()->create();
+    $puesto = Puesto::factory()->create(['id_pro' => $proceso->id_pro]);
+    Inscripcion::factory()->create(['id_pue' => $puesto->id_pue]);
+
+    Livewire::actingAs(Usuario::factory()->superAdministrador()->create())
+        ->test('pages::evaluacion.resultados', ['codigoProceso' => $proceso->codigo_pro])
+        ->assertSee('Excel')
+        ->assertDontSee('Una hoja por puesto')
+        ->assertDontSeeHtml('hoja_por_puesto');
+});

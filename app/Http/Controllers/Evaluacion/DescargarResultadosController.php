@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Evaluacion;
 
 use App\Enums\Permiso;
 use App\Exports\ResultadosTecnicaExport;
+use App\Exports\ResultadosTecnicaPorPuestoExport;
 use App\Http\Controllers\Controller;
 use App\Models\Proceso;
 use App\Models\Puesto;
@@ -23,7 +24,8 @@ class DescargarResultadosController extends Controller
      * Anexo 07, en PDF o en Excel. Sin puesto trae todos los del proceso (o de
      * la unidad), uno tras otro bajo una sola cabecera. En el PDF,
      * repetir_titulos=0 deja la fila de títulos de cada tabla solo al inicio,
-     * sin repetirla en las páginas siguientes.
+     * sin repetirla en las páginas siguientes. En el Excel, hoja_por_puesto=1
+     * pone cada puesto en su propia hoja, con su cabecera y su cierre.
      */
     public function __invoke(Request $request, Proceso $proceso, string $formato, ResultadoService $resultados, PdfDeResultados $pdf): Response|BinaryFileResponse
     {
@@ -33,6 +35,7 @@ class DescargarResultadosController extends Controller
             'unidad' => ['nullable', 'integer'],
             'puesto' => ['nullable', 'integer'],
             'repetir_titulos' => ['nullable', 'boolean'],
+            'hoja_por_puesto' => ['nullable', 'boolean'],
         ]);
 
         abort_unless(
@@ -52,8 +55,14 @@ class DescargarResultadosController extends Controller
 
         $nombre = $resultados->nombreArchivo($proceso, $puesto);
 
-        return $formato === 'excel'
-            ? Excel::download(new ResultadosTecnicaExport($proceso, $porPuesto), "{$nombre}.xlsx")
-            : $pdf->generar($proceso, $porPuesto, $request->boolean('repetir_titulos', true))->download("{$nombre}.pdf");
+        if ($formato === 'excel') {
+            $excel = $request->boolean('hoja_por_puesto')
+                ? new ResultadosTecnicaPorPuestoExport($proceso, $porPuesto)
+                : new ResultadosTecnicaExport($proceso, $porPuesto);
+
+            return Excel::download($excel, "{$nombre}.xlsx");
+        }
+
+        return $pdf->generar($proceso, $porPuesto, $request->boolean('repetir_titulos', true))->download("{$nombre}.pdf");
     }
 }

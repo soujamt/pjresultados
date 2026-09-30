@@ -25,6 +25,10 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
  *
  * Copia las medidas del formato oficial: la columna A queda como margen y las
  * tablas van de B a H. Todo en Arial.
+ *
+ * Tambien es cada hoja de ResultadosTecnicaPorPuestoExport: con un solo puesto
+ * y $hojaDelPuesto, la hoja lleva el codigo del puesto por nombre y la fila de
+ * titulos de su tabla se repite al imprimir cada pagina.
  */
 class ResultadosTecnicaExport implements Export, WithDrawings, WithEvents, WithTitle
 {
@@ -40,6 +44,9 @@ class ResultadosTecnicaExport implements Export, WithDrawings, WithEvents, WithT
     /** Fila donde empieza el primer puesto, debajo de la cabecera del documento. */
     private const PRIMER_PUESTO = 11;
 
+    /** Los tres datos del puesto y una fila en blanco; despues va la fila de titulos. */
+    private const FILAS_ANTES_DE_LA_TABLA = 4;
+
     /** @var array<string, int|float> ancho de cada columna, en caracteres */
     private const ANCHOS = ['A' => 13.71, 'B' => 4, 'C' => 36.71, 'D' => 10.86, 'E' => 15.71, 'F' => 19, 'G' => 19.86, 'H' => 55];
 
@@ -49,11 +56,14 @@ class ResultadosTecnicaExport implements Export, WithDrawings, WithEvents, WithT
     public function __construct(
         private readonly Proceso $proceso,
         private readonly array $resultados,
+        private readonly bool $hojaDelPuesto = false,
     ) {}
 
     public function title(): string
     {
-        return 'Anexo 07';
+        return $this->hojaDelPuesto
+            ? mb_substr($this->resultados[0]->puesto->codigo_pue, 0, 31)
+            : 'Anexo 07';
     }
 
     public function drawings(): Drawing
@@ -126,7 +136,7 @@ class ResultadosTecnicaExport implements Export, WithDrawings, WithEvents, WithT
         $this->datoDelPuesto($hoja, $fila + 1, 'Código del puesto:', $puesto->codigo_pue);
         $this->datoDelPuesto($hoja, $fila + 2, 'Unidad de organización:', (string) $puesto->unidad?->nombre_uni);
 
-        return $this->tabla($hoja, $fila + 4, $delPuesto);
+        return $this->tabla($hoja, $fila + self::FILAS_ANTES_DE_LA_TABLA, $delPuesto);
     }
 
     private function datoDelPuesto(Worksheet $hoja, int $fila, string $etiqueta, string $valor): void
@@ -233,7 +243,8 @@ class ResultadosTecnicaExport implements Export, WithDrawings, WithEvents, WithT
 
     /**
      * A4 horizontal con los margenes del formato, todo el ancho en una
-     * pagina y el numero de pagina abajo a la derecha.
+     * pagina y el numero de pagina abajo a la derecha. En la hoja de un solo
+     * puesto, la fila de titulos se repite en cada pagina impresa.
      */
     private function configurarImpresion(Worksheet $hoja, int $ultimaFila): void
     {
@@ -243,6 +254,11 @@ class ResultadosTecnicaExport implements Export, WithDrawings, WithEvents, WithT
             ->setFitToWidth(1)
             ->setFitToHeight(0)
             ->setPrintArea("A1:H{$ultimaFila}");
+
+        if ($this->hojaDelPuesto) {
+            $titulos = self::PRIMER_PUESTO + self::FILAS_ANTES_DE_LA_TABLA;
+            $hoja->getPageSetup()->setRowsToRepeatAtTopByStartAndEnd($titulos, $titulos);
+        }
 
         $hoja->getPageMargins()->setLeft(0.3 / 2.54)->setRight(0.3 / 2.54)->setTop(1.9 / 2.54)->setBottom(1.9 / 2.54);
         $hoja->getHeaderFooter()->setOddFooter('&R&8Página &P de &N');
